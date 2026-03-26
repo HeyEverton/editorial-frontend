@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Usar variável de ambiente em produção, localhost em desenvolvimento
-const API_URL = import.meta.env.VITE_API_URL || 'https://editorial-frontend-production.up.railway.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://editorial-backend-production.up.railway.app/api';
 console.log('API_URL carregada:', API_URL);
 
 
