@@ -29,7 +29,7 @@ export const structureContent = async (
   referenceContext?: string, 
   workflow: AIWorkflowMode = 'generative'
 ): Promise<EditorialDocument> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   
   const baseInstruction = workflow === 'generative' 
     ? SYSTEM_INSTRUCTION_GENERATIVE 

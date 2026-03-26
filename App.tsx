@@ -5,7 +5,7 @@ import { structureContent, AIWorkflowMode } from './services/geminiService';
 import DocumentPreview from './components/DocumentPreview';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import { logout } from './services/authService';
+import { logout, isAuthenticated, verifyToken } from './services/authService';
 
 const html2pdf = (window as any).html2pdf;
 
@@ -170,7 +170,7 @@ const LAYOUT_PRESETS = {
 };
 
 const App: React.FC = () => {
-  const [authenticated, setAuthenticated] = useState(true); // Bypass temporário para desenvolvimento
+  const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [showDashboard, setShowDashboard] = useState(false);
   const [step, setStep] = useState<WorkflowStep>('inicio');
   const [studioTab, setStudioTab] = useState<StudioTab>('conteudo');
@@ -218,6 +218,14 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
+    // Verificar se o token é válido ao montar o componente
+    if (authenticated) {
+      verifyToken()
+        .catch(() => {
+          setAuthenticated(false);
+        });
+    }
+
     const saved = localStorage.getItem('editorial_history');
     if (saved) {
       try {
