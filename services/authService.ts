@@ -49,6 +49,7 @@ export interface User {
     id: number;
     email: string;
     nome?: string;
+    tokens: number;
 }
 
 export interface AuthResponse {

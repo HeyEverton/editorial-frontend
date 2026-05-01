@@ -1,6 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { EditorialDocument, LayoutSettings, SessionPlan, SavedProject } from '../types';
 import { structureContent, AIWorkflowMode } from '../services/geminiService';
+import { 
+  getProjects, 
+  createProject, 
+  updateProject, 
+  deleteProject, 
+  Project as BackendProject,
+  getProjectById
+} from '../services/projectService';
 import DocumentPreview from './DocumentPreview';
 
 const html2pdf = (window as any).html2pdf;
@@ -175,7 +183,9 @@ const CreateProject: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingSessionIdx, setEditingSessionIdx] = useState<number | null>(null);
-  const [history, setHistory] = useState<SavedProject[]>([]);
+  const [history, setHistory] = useState<BackendProject[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [guidedForm, setGuidedForm] = useState({
     nicho: '',
     publico: '',
@@ -212,31 +222,60 @@ const CreateProject: React.FC = () => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('editorial_history');
-    if (saved) {
+    const fetchHistory = async () => {
       try {
-        setHistory(JSON.parse(saved));
+        const projects = await getProjects();
+        setHistory(projects);
       } catch (e) {
-        console.error("Erro ao carregar histórico");
+        console.error("Erro ao carregar histórico do backend", e);
       }
-    }
+    };
+    fetchHistory();
   }, []);
 
-  const saveToHistory = (newDoc: EditorialDocument, settings: LayoutSettings) => {
-    const newProject: SavedProject = {
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now(),
-      doc: newDoc,
-      settings: settings
-    };
-    const updatedHistory = [newProject, ...history].slice(0, 10);
-    setHistory(updatedHistory);
-    localStorage.setItem('editorial_history', JSON.stringify(updatedHistory));
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const loadFromHistory = (project: SavedProject) => {
-    setDoc(project.doc);
-    setLayoutSettings(project.settings);
+  const saveToBackend = async (newDoc: EditorialDocument, settings: LayoutSettings) => {
+    try {
+      let savedProject: BackendProject;
+      if (currentProjectId) {
+        savedProject = await updateProject(currentProjectId, newDoc.title, newDoc, settings);
+        showToast('Projeto atualizado com sucesso');
+      } else {
+        savedProject = await createProject(newDoc.title, newDoc, settings);
+        setCurrentProjectId(savedProject.id);
+        showToast('Projeto salvo com sucesso');
+      }
+      
+      // Refresh history
+      const updatedHistory = await getProjects();
+      setHistory(updatedHistory);
+    } catch (e: any) {
+      setError(`Erro ao salvar no backend: ${e.message}`);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      await deleteProject(id);
+      setHistory(prev => prev.filter(p => p.id !== id));
+      if (currentProjectId === id) {
+        resetAll();
+      }
+      showToast('Projeto excluído com sucesso');
+    } catch (e: any) {
+      setError(`Erro ao excluir: ${e.message}`);
+    }
+  };
+
+  const loadFromHistory = (project: BackendProject) => {
+    setDoc(project.content.doc);
+    setLayoutSettings(project.content.settings);
+    setCurrentProjectId(project.id);
     setStep('studio');
   };
 
@@ -248,7 +287,7 @@ const CreateProject: React.FC = () => {
     try {
       const structuredDoc = await structureContent(textToProcess, reference, mode);
       setDoc(structuredDoc);
-      saveToHistory(structuredDoc, layoutSettings);
+      await saveToBackend(structuredDoc, layoutSettings);
       setStep('studio');
     } catch (err: any) {
       setError(`Erro no processamento: ${err.message}`);
@@ -337,6 +376,7 @@ const CreateProject: React.FC = () => {
 
   const resetAll = () => {
     setDoc(null);
+    setCurrentProjectId(null);
     setStep('inicio');
     setInput('');
     setError(null);
@@ -455,12 +495,20 @@ const CreateProject: React.FC = () => {
                         onClick={() => loadFromHistory(project)}
                         className="p-5 border border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 hover:border-black dark:hover:border-white/20 cursor-pointer transition-all flex justify-between items-center group"
                       >
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold uppercase tracking-widest group-hover:underline text-black dark:text-white">{project.doc.title}</p>
-                          <p className="text-[8px] text-gray-400 uppercase font-bold">{new Date(project.timestamp).toLocaleString('pt-BR')}</p>
-                        </div>
-                        <span className="text-[9px] text-black dark:text-white opacity-0 group-hover:opacity-100 transition-all">ABRIR →</span>
-                      </div>
+                         <div className="space-y-1">
+                           <p className="text-[10px] font-bold uppercase tracking-widest group-hover:underline text-black dark:text-white">{project.name}</p>
+                           <p className="text-[8px] text-gray-400 uppercase font-bold">{new Date(project.updatedAt).toLocaleString('pt-BR')}</p>
+                         </div>
+                         <div className="flex items-center gap-3">
+                           <button 
+                             onClick={(e) => handleDelete(e, project.id)}
+                             className="text-[9px] text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:underline"
+                           >
+                             EXCLUIR
+                           </button>
+                           <span className="text-[9px] text-black dark:text-white opacity-0 group-hover:opacity-100 transition-all">ABRIR →</span>
+                         </div>
+                       </div>
                     ))}
                   </div>
                 </div>
@@ -593,6 +641,12 @@ const CreateProject: React.FC = () => {
                             NOVO PROJETO
                         </button>
                         <button
+                            onClick={() => saveToBackend(doc, layoutSettings)}
+                            className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white border border-black/10 dark:border-white/10 px-6 py-2.5 hover:bg-white dark:hover:bg-white/10 transition-all bg-white/50 dark:bg-white/5"
+                        >
+                            SALVAR
+                        </button>
+                        <button
                             onClick={exportAsPDF}
                             disabled={exporting}
                             className="px-12 py-3.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:opacity-80 transition-all shadow-2xl disabled:opacity-30"
@@ -634,10 +688,18 @@ const CreateProject: React.FC = () => {
         </section>
       </main>
 
-      {error && (
+       {error && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-red-100 text-red-600 px-8 py-4 border border-red-200 text-[10px] font-bold uppercase tracking-widest z-[100] shadow-2xl">
            {error}
            <button onClick={() => setError(null)} className="ml-4 font-black">✕</button>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 text-[10px] font-bold uppercase tracking-widest z-[100] shadow-2xl animate-in slide-in-from-bottom duration-300 ${
+          toast.type === 'success' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-red-500 text-white'
+        }`}>
+          {toast.message}
         </div>
       )}
     </div>

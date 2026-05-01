@@ -13,8 +13,10 @@
     "@google/genai": "^1.34.0",
     "axios": "^1.6.7",
     "html-to-image": "^1.11.11",
+    "lucide-react": "^1.14.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.14.2",
     "serve": "^14.2.4"
   },
   "devDependencies": {

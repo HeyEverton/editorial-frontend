@@ -1,6 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { getDashboardStats, getProjects, Project, DashboardStats } from '../services/projectService';
+import { getCurrentUser, User } from '../services/authService';
 
 const Home: React.FC = () => {
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [statsData, projectsData, userData] = await Promise.all([
+                    getDashboardStats(),
+                    getProjects(),
+                    getCurrentUser()
+                ]);
+                setStats(statsData);
+                setRecentProjects(projectsData.slice(0, 2));
+                setUser(userData);
+            } catch (error) {
+                console.error("Erro ao carregar dados do dashboard:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
+    const getTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMs = now.getTime() - date.getTime();
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        
+        if (diffInHours < 1) return "Editado agora pouco";
+        if (diffInHours === 1) return "Editado há 1 hora";
+        if (diffInHours < 24) return `Editado há ${diffInHours} horas`;
+        return `Editado em ${date.toLocaleDateString('pt-BR')}`;
+    };
+
     return (
         <div className="min-h-full bg-[#fcfcfc] dark:bg-elite-black transition-colors duration-500">
             <div className="p-12 space-y-16 max-w-7xl mx-auto overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -11,7 +56,9 @@ const Home: React.FC = () => {
                         <div className="h-px w-20 bg-black/5 dark:bg-white/5" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="serif text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight">Seja bem-vindo,</h1>
+                        <h1 className="serif text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight">
+                            Seja bem-vindo{user?.nome ? `, ${user.nome.split(' ')[0]}` : ''},
+                        </h1>
                         <h1 className="serif text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight opacity-90">Seu acervo está em dia.</h1>
                     </div>
                     <div className="h-px w-40 bg-black/10 dark:bg-white/10 mt-8" />
@@ -20,9 +67,25 @@ const Home: React.FC = () => {
                 {/* Grid de Métricas -- MODO ELITE */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {[
-                      { label: "TOTAL DE PROJETOS", value: "12", suffix: "Projetos ativos no diretório", icon: "" },
-                      { label: "ÚLTIMO PROJETO ALTERADO", value: "Relatório Trimestral - Setembro", suffix: "Editado há 2 horas", icon: "", isSmall: true },
-                      { label: "TOTAL DE TOKENS", value: "4.500UN", suffix: "Consumo mensal equilibrado", icon: "" },
+                      { 
+                        label: "TOTAL DE PROJETOS", 
+                        value: loading ? "..." : stats?.totalProjects.toString() || "0", 
+                        suffix: "Projetos ativos no diretório", 
+                        icon: "" 
+                      },
+                      { 
+                        label: "ÚLTIMO PROJETO ALTERADO", 
+                        value: loading ? "..." : stats?.lastUpdatedProject?.name || "Nenhum projeto", 
+                        suffix: stats?.lastUpdatedProject ? getTimeAgo(stats.lastUpdatedProject.updatedAt) : "Comece a criar agora", 
+                        icon: "", 
+                        isSmall: true 
+                      },
+                      { 
+                        label: "TOTAL DE TOKENS", 
+                        value: loading ? "..." : `${user?.tokens || 0}UN`, 
+                        suffix: "Consumo mensal equilibrado", 
+                        icon: "" 
+                      },
                     ].map((stat, i) => (
                       <div key={i} className="p-6 border border-gray-100 dark:border-white/5 bg-white dark:bg-elite-gray hover:border-black dark:hover:border-white/20 transition-all group relative">
                         <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-100 transition-opacity">
@@ -36,7 +99,7 @@ const Home: React.FC = () => {
                       </div>
                     ))}
 
-                    {/* Card de Destaque - Próxima Renovação (SEMPRE BRANCO NO DARK MODE CONFORME PRINT) */}
+                    {/* Card de Destaque - Próxima Renovação */}
                     <div className="p-8 bg-white border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-xl">
                         <div className="flex justify-between items-start">
                             <p className="text-[8px] font-black text-gray-400 tracking-[0.4em] uppercase">PRÓXIMA RENOVAÇÃO</p>
@@ -57,28 +120,44 @@ const Home: React.FC = () => {
                         </div>
 
                         <div className="space-y-12">
-                            {[
-                                { title: "Anuário de Design 2024", category: "EDITORIA DE LUXO", desc: "Uma exploração tipográfica sobre a evolução do design industrial no século XXI.", pages: "120 PÁGINAS", format: "PDF, EPUB" },
-                                { title: "Impacto Ambiental Sustentável", category: "RELATÓRIO ESTRATÉGICO", desc: "Análise técnica e curadoria visual sobre iniciativas de ESG em mercados emergentes.", pages: "45 PÁGINAS", format: "PDF" }
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-8 group cursor-pointer items-center">
-                                    <div className="w-32 h-44 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 p-2 transform group-hover:-translate-y-2 transition-transform duration-500 shadow-sm group-hover:shadow-2xl">
-                                        <div className="w-full h-full border border-gray-100 dark:border-white/5 bg-white dark:bg-transparent flex items-center justify-center">
-                                            <span className="serif italic text-black dark:text-white opacity-20">EDITORIAL</span>
+                            {loading ? (
+                                <div className="space-y-8 animate-pulse">
+                                    {[1, 2].map(i => (
+                                        <div key={i} className="flex gap-8 items-center">
+                                            <div className="w-32 h-44 bg-gray-100 dark:bg-white/5" />
+                                            <div className="flex-1 space-y-4">
+                                                <div className="h-2 w-20 bg-gray-100 dark:bg-white/5" />
+                                                <div className="h-8 w-64 bg-gray-100 dark:bg-white/5" />
+                                                <div className="h-4 w-48 bg-gray-100 dark:bg-white/5" />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex-1 space-y-3">
-                                        <span className="text-[8px] font-black tracking-[0.4em] text-gray-400">{item.category}</span>
-                                        <h4 className="serif text-3xl italic text-black dark:text-white group-hover:underline">{item.title}</h4>
-                                        <p className="text-[11px] text-gray-400 dark:text-white/40 leading-relaxed max-w-sm">{item.desc}</p>
-                                        <div className="flex items-center gap-4 pt-2">
-                                            <span className="text-[9px] font-black tracking-widest text-black/40 dark:text-white/20">{item.pages}</span>
-                                            <div className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/10" />
-                                            <span className="text-[9px] font-black tracking-widest text-black/40 dark:text-white/20">{item.format}</span>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : recentProjects.length > 0 ? (
+                                recentProjects.map((item, i) => (
+                                    <div key={item.id} className="flex gap-8 group cursor-pointer items-center">
+                                        <div className="w-32 h-44 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 p-2 transform group-hover:-translate-y-2 transition-transform duration-500 shadow-sm group-hover:shadow-2xl">
+                                            <div className="w-full h-full border border-gray-100 dark:border-white/5 bg-white dark:bg-transparent flex items-center justify-center">
+                                                <span className="serif italic text-black dark:text-white opacity-20">EDITORIAL</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                            <span className="text-[8px] font-black tracking-[0.4em] text-gray-400 uppercase">{item.content.doc.sessions[0]?.format || 'PROJETO'}</span>
+                                            <h4 className="serif text-3xl italic text-black dark:text-white group-hover:underline">{item.name}</h4>
+                                            <p className="text-[11px] text-gray-400 dark:text-white/40 leading-relaxed max-w-sm line-clamp-2">{item.shortDescription}</p>
+                                            <div className="flex items-center gap-4 pt-2">
+                                                <span className="text-[9px] font-black tracking-widest text-black/40 dark:text-white/20 whitespace-nowrap uppercase">{item.content.doc.sessions.length} SESSÕES</span>
+                                                <div className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/10" />
+                                                <span className="text-[9px] font-black tracking-widest text-black/40 dark:text-white/20 uppercase">{item.content.settings.fontTitle} + {item.content.settings.fontBody}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="py-20 text-center border border-dashed border-gray-200 dark:border-white/10">
+                                    <p className="serif text-xl italic text-black/20 dark:text-white/10 tracking-widest uppercase">Nenhum manuscrito encontrado em sua biblioteca</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -108,7 +187,10 @@ const Home: React.FC = () => {
                             </div>
                         </div>
 
-                        <button className="w-full py-6 bg-white text-black border border-gray-100 text-[10px] font-black tracking-[0.3em] uppercase hover:bg-black hover:text-white transition-all shadow-2xl">
+                        <button 
+                            onClick={() => window.location.hash = '#/create'}
+                            className="w-full py-6 bg-white text-black border border-gray-100 text-[10px] font-black tracking-[0.3em] uppercase hover:bg-black hover:text-white transition-all shadow-2xl"
+                        >
                            INICIAR NOVO PROJETO
                         </button>
                     </div>
@@ -126,3 +208,4 @@ const Home: React.FC = () => {
 };
 
 export default Home;
+

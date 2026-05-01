@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, ChevronDown, Check, Quote,
   Layers, Award, Target, Users, Zap, Eye, PenTool,
@@ -93,8 +94,11 @@ const Label = ({ children, invert = false }) => (
 
 const CTABtn = ({ children = "Acessar o Estúdio Elite", invert = false, large = false }) => {
   const [h, sH] = useState(false);
+  const navigate = useNavigate();
   return (
-    <button onMouseEnter={() => sH(true)} onMouseLeave={() => sH(false)} style={{
+    <button 
+      onClick={() => navigate('/elite')}
+      onMouseEnter={() => sH(true)} onMouseLeave={() => sH(false)} style={{
       fontFamily: "'Syne', sans-serif", fontWeight: 700,
       fontSize: large ? 11 : 10,
       letterSpacing: h ? "3.5px" : (large ? "3px" : "2.5px"),
@@ -116,6 +120,7 @@ const CTABtn = ({ children = "Acessar o Estúdio Elite", invert = false, large =
 /* ── NAVBAR ── */
 const Navbar = () => {
   const [sc, setSc] = useState(false);
+  const navigate = useNavigate();
   useEffect(() => { const h = () => setSc(window.scrollY > 40); window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h); }, []);
   return (
     <nav style={{
@@ -134,13 +139,28 @@ const Navbar = () => {
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, letterSpacing: 1.5, color: T.black }}>AE·Studio</span>
       </div>
       <div style={{ display: "flex", gap: 40 }}>
-        {["Solução", "Presets", "Recursos", "FAQ"].map(l => (
-          <a key={l} href="#" style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", textDecoration: "none", color: T.muted, transition: "color 0.2s" }}
+        {[
+          { name: "Solução", id: "solucao" },
+          { name: "Presets", id: "presets" },
+          { name: "Planos", id: "planos" },
+          { name: "Recursos", id: "recursos" },
+          { name: "FAQ", id: "faq" }
+        ].map(l => (
+          <a 
+            key={l.id} 
+            href={`#${l.id}`} 
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(l.id)?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", textDecoration: "none", color: T.muted, transition: "color 0.2s" }}
             onMouseEnter={e => e.target.style.color = T.black}
-            onMouseLeave={e => e.target.style.color = T.muted}>{l}</a>
+            onMouseLeave={e => e.target.style.color = T.muted}>{l.name}</a>
         ))}
       </div>
-      <button style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, letterSpacing: 2.5, textTransform: "uppercase", background: "transparent", color: T.black, border: `1px solid ${T.borderStrong}`, padding: "9px 22px", cursor: "pointer", transition: "all 0.25s" }}
+      <button 
+        onClick={() => navigate('/elite')}
+        style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, letterSpacing: 2.5, textTransform: "uppercase", background: "transparent", color: T.black, border: `1px solid ${T.borderStrong}`, padding: "9px 22px", cursor: "pointer", transition: "all 0.25s" }}
         onMouseEnter={e => { e.currentTarget.style.background = T.black; e.currentTarget.style.color = T.white; }}
         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = T.black; }}>
         Entrar
@@ -217,7 +237,7 @@ const pillars = [
 ];
 
 const Formula = () => (
-  <section style={{ background: T.offwhite, padding: "128px 24px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+  <section id="solucao" style={{ background: T.offwhite, padding: "128px 24px", textAlign: "center", position: "relative", overflow: "hidden" }}>
     <DotTexture opacity={0.05} />
     <R style={{ marginBottom: 80 }}>
       <Label>Engenharia de Prompt Invisível</Label>
@@ -307,7 +327,7 @@ const PresetsSection = () => {
   const [active, setActive] = useState(1);
   const p = presets[active];
   return (
-    <section style={{ background: T.snow, padding: "128px 24px", position: "relative", overflow: "hidden" }}>
+    <section id="presets" style={{ background: T.snow, padding: "128px 24px", position: "relative", overflow: "hidden" }}>
       <GridTexture opacity={0.03} />
       <R style={{ textAlign: "center", marginBottom: 64 }}>
         <Label>Estúdio de Edição em Tempo Real</Label>
@@ -355,7 +375,7 @@ const formats = [
 ];
 
 const MultiFormat = () => (
-  <section style={{ background: T.white, padding: "128px 24px" }}>
+  <section id="recursos" style={{ background: T.white, padding: "128px 24px" }}>
     <R style={{ textAlign: "center", marginBottom: 80 }}>
       <Label>Arquitetura Multi-Formato</Label>
       <Rule style={{ marginBottom: 40 }} />
@@ -528,7 +548,7 @@ const FAQItem = ({ faq, i }) => {
 };
 
 const FAQ = () => (
-  <section style={{ background: T.white, padding: "120px 24px" }}>
+  <section id="faq" style={{ background: T.white, padding: "120px 24px" }}>
     <div style={{ maxWidth: 700, margin: "0 auto" }}>
       <R style={{ textAlign: "center", marginBottom: 60 }}>
         <Label>Dúvidas Frequentes</Label>
@@ -758,8 +778,10 @@ const PricingCard = ({ plan, index }) => {
 const PricingCTA = ({ plan }) => {
   const [h, sH] = useState(false);
   const f = plan.featured;
+  const navigate = useNavigate();
   return (
     <button
+      onClick={() => navigate('/checkout')}
       onMouseEnter={() => sH(true)}
       onMouseLeave={() => sH(false)}
       style={{
@@ -782,7 +804,7 @@ const PricingCTA = ({ plan }) => {
 };
 
 const Pricing = () => (
-  <section style={{ background: T.offwhite, padding: "130px 24px", position: "relative", overflow: "hidden" }}>
+  <section id="planos" style={{ background: T.offwhite, padding: "130px 24px", position: "relative", overflow: "hidden" }}>
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none",
       backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)",
       backgroundSize: "40px 40px" }} />
@@ -839,9 +861,9 @@ export default function ArquiteturaEditorialV16() {
       <DualBrain />
       <PresetsSection />
       <MultiFormat />
+      <Pricing />
       <A3Showcase />
       <Social />
-      <Pricing />
       <FAQ />
       <FinalCTA />
       <Footer />
