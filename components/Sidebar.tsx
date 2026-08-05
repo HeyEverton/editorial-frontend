@@ -7,6 +7,7 @@ interface SidebarProps {
   setActiveScreen: (screen: string) => void;
   onLogout: () => void;
   userName?: string;
+  onCloseMobile?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -15,7 +16,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   activeScreen, 
   setActiveScreen,
   onLogout,
-  userName = "CURADOR DIGITAL"
+  userName = "CURADOR DIGITAL",
+  onCloseMobile
 }) => {
   const menuItems = [
     { id: 'home', label: 'HOME', icon: (
@@ -46,13 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div 
-      className={`no-print h-screen border-r flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-72'} ${activeScreen === 'perfil' ? '' : 'bg-[#f5f5f5] dark:bg-elite-dark border-gray-100 dark:border-white/5'}`}
+      className={`no-print h-screen border-r flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-full md:w-72'} ${activeScreen === 'perfil' ? '' : 'bg-[#f5f5f5] dark:bg-elite-dark border-gray-100 dark:border-white/5'}`}
       style={{
         backgroundColor: activeScreen === 'perfil' ? (document.documentElement.classList.contains('dark') ? '#0d0d0d' : '#f5f5f5') : undefined
       }}
     >
       {/* Header / Logo */}
-      <div className="p-8 pb-12 flex flex-col gap-2 overflow-hidden">
+      <div className="p-8 pb-12 flex items-center justify-between overflow-hidden">
         {!isCollapsed && (
           <div className="animate-in fade-in duration-500">
             <h1 className="serif text-xl font-bold italic leading-tight tracking-tight">Arquitetura Editorial</h1>
@@ -60,9 +62,20 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
         {isCollapsed && (
-             <div className="flex justify-center">
+             <div className="flex justify-center w-full">
                 <span className="serif text-2xl font-black italic">A</span>
              </div>
+        )}
+        {onCloseMobile && (
+          <button 
+            onClick={onCloseMobile}
+            className="p-2 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-white/10 rounded transition-colors"
+            title="Fechar menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         )}
       </div>
 

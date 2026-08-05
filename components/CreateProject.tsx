@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EditorialDocument, LayoutSettings, SessionPlan, SavedProject } from '../types';
 import { structureContent, AIWorkflowMode } from '../services/geminiService';
 import { 
@@ -10,6 +11,7 @@ import {
   getProjectById
 } from '../services/projectService';
 import DocumentPreview from './DocumentPreview';
+import RotatingText from './RotatingText';
 
 const html2pdf = (window as any).html2pdf;
 
@@ -221,17 +223,32 @@ const CreateProject: React.FC = () => {
     showObservation: true
   });
 
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchHistoryAndQueryProject = async () => {
       try {
         const projects = await getProjects();
         setHistory(projects);
+
+        const projectIdParam = searchParams.get('id');
+        if (projectIdParam) {
+          const found = projects.find(p => p.id === Number(projectIdParam));
+          if (found) {
+            loadFromHistory(found);
+          } else {
+            const fetched = await getProjectById(Number(projectIdParam));
+            if (fetched) {
+              loadFromHistory(fetched);
+            }
+          }
+        }
       } catch (e) {
         console.error("Erro ao carregar histórico do backend", e);
       }
     };
-    fetchHistory();
-  }, []);
+    fetchHistoryAndQueryProject();
+  }, [searchParams]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -348,20 +365,20 @@ const CreateProject: React.FC = () => {
     if (!element || !doc) return;
     setExporting(true);
     try {
-      element.classList.add('pdf-export-mode', 'pdf-mode-a3');
+      element.classList.add('pdf-export-mode', 'pdf-mode-a2');
       await new Promise(resolve => setTimeout(resolve, 800));
 
       const opt = {
         margin: 0,
-        filename: `${doc.title.toLowerCase().replace(/\s/g, '-')}-a3-elite.pdf`,
+        filename: `${doc.title.toLowerCase().replace(/\s/g, '-')}-a2-elite.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
-          windowWidth: 1122, 
+          windowWidth: 1587, 
           letterRendering: true
         },
-        jsPDF: { unit: 'mm', format: 'a3', orientation: 'portrait' },
+        jsPDF: { unit: 'mm', format: 'a2', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
@@ -369,7 +386,7 @@ const CreateProject: React.FC = () => {
     } catch (err) {
       setError('Erro ao exportar PDF.');
     } finally {
-      element.classList.remove('pdf-export-mode', 'pdf-mode-a3');
+      element.classList.remove('pdf-export-mode', 'pdf-mode-a2');
       setExporting(false);
     }
   };
@@ -473,7 +490,43 @@ const CreateProject: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-[#fcfcfc] dark:bg-elite-black transition-colors duration-500 overflow-hidden relative">
-      <main className="flex flex-1 overflow-hidden h-full">
+      <main className="flex flex-1 overflow-hidden h-full relative">
+        {loading && (
+          <div className="absolute inset-0 z-40 backdrop-blur-md bg-white/70 dark:bg-elite-black/80 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+            <div className="flex flex-col items-center justify-center space-y-6 max-w-lg">
+              <p className="text-[9px] font-black tracking-[0.5em] text-gray-400 dark:text-white/40 uppercase">
+                AGÊNCIA EDITORIAL DE ELITE
+              </p>
+
+              <RotatingText
+                texts={[
+                  'ARQUITETANDO ESTRATÉGIA',
+                  'ESTRUTURANDO CONTEÚDO',
+                  'APLICANDO DESIGN DE ELITE',
+                  'GERANDO GANCHOS MAGNÉTICOS',
+                  'REFINANDO DIREÇÃO CRIATIVA',
+                  'FINALIZANDO MANUSCRITO'
+                ]}
+                mainClassName="px-3 py-1.5 sm:px-4 sm:py-2 bg-black dark:bg-white text-white dark:text-black font-mono text-xs sm:text-sm uppercase tracking-[0.25em] font-bold shadow-2xl rounded justify-center"
+                staggerFrom="last"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "-120%" }}
+                staggerDuration={0.025}
+                splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1"
+                transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                rotationInterval={2000}
+                splitBy="characters"
+                auto
+                loop
+              />
+
+              <p className="text-[10px] text-gray-500 dark:text-white/50 tracking-[0.2em] uppercase font-light leading-relaxed">
+                Sintetizando inteligência em um planejamento irrefutável...
+              </p>
+            </div>
+          </div>
+        )}
         {/* Painel Lateral de Edição */}
         <aside className="no-print w-full md:w-[500px] border-r border-gray-100 dark:border-white/5 bg-white dark:bg-elite-dark flex flex-col overflow-y-auto">
           {step === 'inicio' && (
@@ -627,29 +680,29 @@ const CreateProject: React.FC = () => {
         {/* Preview Area */}
         <section className="flex-1 bg-[#f0f0f0] dark:bg-elite-black overflow-y-auto p-12 transition-colors duration-500 relative scroll-smooth">
             {/* Header Flutuante de Projeto */}
-            <div className="sticky top-0 right-0 w-full flex justify-between items-center mb-12 z-10">
-                <div className="flex items-center gap-4">
-                    <span className="text-[9px] font-black text-black/20 dark:text-white/20 tracking-[0.4em] uppercase">PROJETO ATIVO</span>
-                    {doc && <h3 className="serif text-xl italic text-black dark:text-white opacity-80">{doc.title}</h3>}
+            <div className="sticky top-0 -mt-12 -mx-12 mb-8 p-6 z-30 bg-[#f0f0f0]/95 dark:bg-elite-black/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 shadow-sm flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                    <span className="text-[9px] font-black text-black/40 dark:text-white/40 tracking-[0.4em] uppercase shrink-0">PROJETO ATIVO</span>
+                    {doc && <h3 className="serif text-lg italic text-black dark:text-white font-medium truncate max-w-xs md:max-w-md">{doc.title}</h3>}
                 </div>
                 {doc && (
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 shrink-0">
                         <button
                             onClick={resetAll}
-                            className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white border border-black/10 dark:border-white/10 px-6 py-2.5 hover:bg-white dark:hover:bg-white/10 transition-all bg-white/50 dark:bg-white/5"
+                            className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white border border-black/10 dark:border-white/10 px-5 py-2.5 hover:bg-white dark:hover:bg-white/10 transition-all bg-white/80 dark:bg-white/5"
                         >
                             NOVO PROJETO
                         </button>
                         <button
                             onClick={() => saveToBackend(doc, layoutSettings)}
-                            className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white border border-black/10 dark:border-white/10 px-6 py-2.5 hover:bg-white dark:hover:bg-white/10 transition-all bg-white/50 dark:bg-white/5"
+                            className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white border border-black/10 dark:border-white/10 px-5 py-2.5 hover:bg-white dark:hover:bg-white/10 transition-all bg-white/80 dark:bg-white/5"
                         >
                             SALVAR
                         </button>
                         <button
                             onClick={exportAsPDF}
                             disabled={exporting}
-                            className="px-12 py-3.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:opacity-80 transition-all shadow-2xl disabled:opacity-30"
+                            className="px-8 py-2.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:opacity-80 transition-all shadow-xl disabled:opacity-30"
                         >
                             {exporting ? 'GERANDO PDF...' : 'EXPORTAR'}
                         </button>
@@ -669,17 +722,17 @@ const CreateProject: React.FC = () => {
                         <p className="text-[10px] font-black uppercase tracking-[0.5em] text-black/20 dark:text-white/10">SELECIONE UM FLUXO PARA COMEÇAR</p>
                     </div>
                     
-                    <div className="flex gap-12 pt-10 opacity-20 dark:opacity-10">
+                    <div className="flex gap-12 pt-10 opacity-30 dark:opacity-20">
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-2xl">✨</span>
+                            <span className="text-xs font-black border border-black dark:border-white rounded-full w-8 h-8 flex items-center justify-center">01</span>
                             <span className="text-[8px] font-black tracking-widest uppercase text-black dark:text-white">INTELIGÊNCIA</span>
                         </div>
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-2xl">🔳</span>
+                            <span className="text-xs font-black border border-black dark:border-white rounded-full w-8 h-8 flex items-center justify-center">02</span>
                             <span className="text-[8px] font-black tracking-widest uppercase text-black dark:text-white">ESTRUTURA</span>
                         </div>
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-2xl">🖋️</span>
+                            <span className="text-xs font-black border border-black dark:border-white rounded-full w-8 h-8 flex items-center justify-center">03</span>
                             <span className="text-[8px] font-black tracking-widest uppercase text-black dark:text-white">REDAÇÃO</span>
                         </div>
                     </div>
@@ -688,7 +741,9 @@ const CreateProject: React.FC = () => {
         </section>
       </main>
 
-       {error && (
+
+
+      {error && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-red-100 text-red-600 px-8 py-4 border border-red-200 text-[10px] font-bold uppercase tracking-widest z-[100] shadow-2xl">
            {error}
            <button onClick={() => setError(null)} className="ml-4 font-black">✕</button>

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getDashboardStats, getProjects, Project, DashboardStats } from '../services/projectService';
 import { getCurrentUser, User } from '../services/authService';
 
 const Home: React.FC = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [recentProjects, setRecentProjects] = useState<Project[]>([]);
     const [user, setUser] = useState<User | null>(null);
@@ -48,7 +50,7 @@ const Home: React.FC = () => {
 
     return (
         <div className="min-h-full bg-[#fcfcfc] dark:bg-elite-black transition-colors duration-500">
-            <div className="p-12 space-y-16 max-w-7xl mx-auto overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="p-6 sm:p-12 space-y-12 sm:space-y-16 max-w-7xl mx-auto overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
                 {/* Boas Vindas */}
                 <header className="space-y-6">
                     <div className="flex items-center gap-4">
@@ -56,16 +58,16 @@ const Home: React.FC = () => {
                         <div className="h-px w-20 bg-black/5 dark:bg-white/5" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="serif text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight">
+                        <h1 className="serif text-4xl sm:text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight">
                             Seja bem-vindo{user?.nome ? `, ${user.nome.split(' ')[0]}` : ''},
                         </h1>
-                        <h1 className="serif text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight opacity-90">Seu acervo está em dia.</h1>
+                        <h1 className="serif text-4xl sm:text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight opacity-90">Seu acervo está em dia.</h1>
                     </div>
                     <div className="h-px w-40 bg-black/10 dark:bg-white/10 mt-8" />
                 </header>
 
-                {/* Grid de Métricas -- MODO ELITE */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Grid de Métricas -- MODO ELITE RESPONSIVO */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                     {[
                       { 
                         label: "TOTAL DE PROJETOS", 
@@ -78,7 +80,8 @@ const Home: React.FC = () => {
                         value: loading ? "..." : stats?.lastUpdatedProject?.name || "Nenhum projeto", 
                         suffix: stats?.lastUpdatedProject ? getTimeAgo(stats.lastUpdatedProject.updatedAt) : "Comece a criar agora", 
                         icon: "", 
-                        isSmall: true 
+                        isSmall: true,
+                        projectId: stats?.lastUpdatedProject?.id
                       },
                       { 
                         label: "TOTAL DE TOKENS", 
@@ -87,36 +90,42 @@ const Home: React.FC = () => {
                         icon: "" 
                       },
                     ].map((stat, i) => (
-                      <div key={i} className="p-6 border border-gray-100 dark:border-white/5 bg-white dark:bg-elite-gray hover:border-black dark:hover:border-white/20 transition-all group relative">
-                        <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-100 transition-opacity">
-                            <span className="text-sm">{stat.icon}</span>
-                        </div>
+                      <div 
+                        key={i} 
+                        onClick={() => stat.projectId && navigate(`/elite/criar?id=${stat.projectId}`)}
+                        className={`p-6 border border-gray-100 dark:border-white/5 bg-white dark:bg-elite-gray transition-all group relative ${stat.projectId ? 'cursor-pointer hover:border-black dark:hover:border-white/20' : ''}`}
+                      >
                         <div className="space-y-6">
                             <p className="text-[8px] font-black text-gray-300 dark:text-white/30 tracking-[0.4em] uppercase group-hover:text-black dark:group-hover:text-white transition-colors leading-relaxed">{stat.label}</p>
-                            <h2 className={`serif italic font-bold tracking-tight text-black dark:text-white leading-none ${stat.isSmall ? 'text-lg' : 'text-4xl'}`}>{stat.value}</h2>
+                            <h2 className={`serif italic font-bold tracking-tight text-black dark:text-white leading-snug ${stat.isSmall ? 'text-lg line-clamp-2 break-words' : 'text-4xl'}`}>{stat.value}</h2>
                             <p className="text-[9px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em]">{stat.suffix}</p>
                         </div>
                       </div>
                     ))}
 
                     {/* Card de Destaque - Próxima Renovação */}
-                    <div className="p-8 bg-white border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-xl">
+                    <div className="p-6 sm:p-8 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-xl">
                         <div className="flex justify-between items-start">
-                            <p className="text-[8px] font-black text-gray-400 tracking-[0.4em] uppercase">PRÓXIMA RENOVAÇÃO</p>
+                            <p className="text-[8px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase">PRÓXIMA RENOVAÇÃO</p>
                         </div>
                         <div className="space-y-1 py-4">
-                            <h2 className="serif text-4xl font-bold tracking-tight text-black">15 de Outubro, 2026</h2>
+                            <h2 className="serif text-2xl lg:text-3xl font-bold tracking-tight text-black dark:text-white break-words">15 de Outubro, 2026</h2>
                         </div>
-                        <p className="text-[9px] font-bold text-gray-400 tracking-[0.2em] uppercase">Plano Anual Editorial Plus</p>
+                        <p className="text-[9px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em] uppercase">Plano Anual Editorial Plus</p>
                     </div>
                 </div>
 
                 {/* Seção Central - Manuscritos Recentes */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                    <div className="md:col-span-2 space-y-10">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    <div className="lg:col-span-2 space-y-10">
                         <div className="flex justify-between items-end border-b border-gray-100 dark:border-white/5 pb-6">
                             <h3 className="serif text-3xl italic text-black dark:text-white">Manuscritos Recentes</h3>
-                            <button className="text-[9px] font-black tracking-[0.3em] text-gray-400 hover:text-black dark:hover:text-white transition-colors">VER GALERIA COMPLETA</button>
+                            <button 
+                                onClick={() => navigate('/elite/criar')}
+                                className="text-[9px] font-black tracking-[0.3em] text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                            >
+                                VER GALERIA COMPLETA
+                            </button>
                         </div>
 
                         <div className="space-y-12">
@@ -134,18 +143,22 @@ const Home: React.FC = () => {
                                     ))}
                                 </div>
                             ) : recentProjects.length > 0 ? (
-                                recentProjects.map((item, i) => (
-                                    <div key={item.id} className="flex gap-8 group cursor-pointer items-center">
-                                        <div className="w-32 h-44 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 p-2 transform group-hover:-translate-y-2 transition-transform duration-500 shadow-sm group-hover:shadow-2xl">
+                                recentProjects.map((item) => (
+                                    <div 
+                                        key={item.id} 
+                                        onClick={() => navigate(`/elite/criar?id=${item.id}`)}
+                                        className="flex flex-col sm:flex-row gap-6 sm:gap-8 group cursor-pointer items-start sm:items-center p-4 -mx-4 rounded border border-transparent hover:border-gray-100 dark:hover:border-white/5 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all"
+                                    >
+                                        <div className="w-32 h-44 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 p-2 transform group-hover:-translate-y-2 transition-transform duration-500 shadow-sm group-hover:shadow-2xl shrink-0">
                                             <div className="w-full h-full border border-gray-100 dark:border-white/5 bg-white dark:bg-transparent flex items-center justify-center">
                                                 <span className="serif italic text-black dark:text-white opacity-20">EDITORIAL</span>
                                             </div>
                                         </div>
-                                        <div className="flex-1 space-y-3">
+                                        <div className="flex-1 space-y-3 min-w-0">
                                             <span className="text-[8px] font-black tracking-[0.4em] text-gray-400 uppercase">{item.content.doc.sessions[0]?.format || 'PROJETO'}</span>
-                                            <h4 className="serif text-3xl italic text-black dark:text-white group-hover:underline">{item.name}</h4>
+                                            <h4 className="serif text-2xl sm:text-3xl italic text-black dark:text-white group-hover:underline break-words">{item.name}</h4>
                                             <p className="text-[11px] text-gray-400 dark:text-white/40 leading-relaxed max-w-sm line-clamp-2">{item.shortDescription}</p>
-                                            <div className="flex items-center gap-4 pt-2">
+                                            <div className="flex flex-wrap items-center gap-4 pt-2">
                                                 <span className="text-[9px] font-black tracking-widest text-black/40 dark:text-white/20 whitespace-nowrap uppercase">{item.content.doc.sessions.length} SESSÕES</span>
                                                 <div className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/10" />
                                                 <span className="text-[9px] font-black tracking-widest text-black/40 dark:text-white/20 uppercase">{item.content.settings.fontTitle} + {item.content.settings.fontBody}</span>
@@ -188,8 +201,8 @@ const Home: React.FC = () => {
                         </div>
 
                         <button 
-                            onClick={() => window.location.hash = '#/create'}
-                            className="w-full py-6 bg-white text-black border border-gray-100 text-[10px] font-black tracking-[0.3em] uppercase hover:bg-black hover:text-white transition-all shadow-2xl"
+                            onClick={() => navigate('/elite/criar')}
+                            className="w-full py-6 bg-white dark:bg-white/10 text-black dark:text-white border border-gray-100 dark:border-white/10 text-[10px] font-black tracking-[0.3em] uppercase hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-2xl"
                         >
                            INICIAR NOVO PROJETO
                         </button>

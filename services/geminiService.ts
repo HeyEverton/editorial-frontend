@@ -22,7 +22,8 @@ REGRAS DE OURO:
 4. ESTRUTURA: Siga o esquema JSON rigorosamente. Use 'sessions'.
 5. NOMENCLATURA: Identifique cada sessão como "SESSÃO 01", "SESSÃO 02", etc., no campo 'session'.
 6. STORIES: Toda sessão deve ter um plano de 3 a 5 sequências de stories focadas em engajamento ou venda.
-7. REELS: Inclua sempre o campo 'transition' (ex: corte seco, zoom lento) e 'audioSuggestion' (ex: áudio em alta, trilha elegante).`;
+7. REELS: Inclua sempre o campo 'transition' (ex: corte seco, zoom lento) e 'audioSuggestion' (ex: áudio em alta, trilha elegante).
+8. SEM EMOJIS: Não inclua emojis nem ícones pictóricos em nenhum título, texto, gancho, legenda ou instrução.`;
 
 export const structureContent = async (
   rawText: string, 
@@ -43,7 +44,7 @@ export const structureContent = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', 
+      model: 'gemini-3.6-flash', 
       contents: rawText,
       config: {
         systemInstruction: finalInstruction,
