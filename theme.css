@@ -1,0 +1,182 @@
+/* ════════════════════════════════════════════════════════════════════
+   SISTEMA DE ANIMAÇÕES E ESTILOS FLUIDOS DE INTERFACE (THEME.CSS)
+   Inspirado nos componentes e comportamentos do FoodOS
+════════════════════════════════════════════════════════════════════ */
+
+/* Modal & Dialog Pop Animations (FoodOS Dialog Style) */
+@keyframes modalOverlayFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes modalContentScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-overlay {
+  animation: modalOverlayFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-content {
+  animation: modalContentScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Dialog Custom Close Button (FoodOS _dialog.scss micro-interaction) */
+.ui-dialog-close-btn {
+  border-radius: 0.5rem;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+
+.ui-dialog-close-btn:hover {
+  transform: translate(2px, -2px) scale(1.05);
+}
+
+/* Fluid Form Input Focus Effect (FoodOS _field.scss style) */
+.ui-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ui-input::placeholder {
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.ui-input:hover:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.dark .ui-input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ui-input:focus {
+  outline: none;
+  border-color: #000000 !important;
+  box-shadow: 0 3px 12px -2px rgba(0, 0, 0, 0.12), 0 0 0 3px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.ui-input:focus::placeholder {
+  transform: translateX(4px);
+  opacity: 0.7;
+}
+
+.dark .ui-input:focus {
+  border-color: #ffffff !important;
+  box-shadow: 0 3px 12px -2px rgba(255, 255, 255, 0.15), 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Fluid Select Dropdown Effect (FoodOS _field.scss & _menu.scss style) */
+.ui-select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1em 1em;
+  cursor: pointer;
+}
+
+.ui-select:hover:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.dark .ui-select:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ui-select:focus {
+  outline: none;
+  border-color: #000000 !important;
+  box-shadow: 0 3px 12px -2px rgba(0, 0, 0, 0.12), 0 0 0 3px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.dark .ui-select:focus {
+  border-color: #ffffff !important;
+  box-shadow: 0 3px 12px -2px rgba(255, 255, 255, 0.15), 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Animated Checkbox (FoodOS _checkbox.scss drop-shadow & spring animation) */
+.ui-checkbox {
+  appearance: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark .ui-checkbox {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.ui-checkbox::before {
+  content: "";
+  width: 0.65em;
+  height: 0.65em;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  transform: scale(0);
+  background-color: #ffffff;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark .ui-checkbox::before {
+  background-color: #000000;
+}
+
+.ui-checkbox:checked {
+  background-color: #000000;
+  border-color: #000000;
+  transform: scale(1.06);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.dark .ui-checkbox:checked {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.3));
+}
+
+.ui-checkbox:checked::before {
+  transform: scale(1);
+}
+
+.ui-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+}
+
+.dark .ui-checkbox:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+/* Smooth Card Hover Lift (FoodOS card elevation) */
+.ui-card-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.ui-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.08);
+}
+
+.dark .ui-card-hover:hover {
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.2);
+}

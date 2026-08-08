@@ -85,8 +85,8 @@ const Home: React.FC = () => {
                       },
                       { 
                         label: "TOTAL DE TOKENS", 
-                        value: loading ? "..." : `${user?.tokens || 0}UN`, 
-                        suffix: "Consumo mensal equilibrado", 
+                        value: loading ? "..." : `${user?.tokens || 0}`, 
+                        suffix: "", 
                         icon: "" 
                       },
                     ].map((stat, i) => (

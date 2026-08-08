@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import ShinyText from "./ShinyText";
 import {
   ArrowRight, ChevronDown, Check, Quote,
   Layers, Award, Target, Users, Zap, Eye, PenTool,
@@ -215,7 +216,17 @@ const Hero = () => {
               <div key={i} style={{ background: i === 4 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", padding: "6px 14px", fontFamily: "'Syne', sans-serif", fontSize: 9, letterSpacing: 1.5, color: i === 4 ? T.white : "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>{s}</div>
             ))}
           </div>
-          <div style={{ marginTop: 20, fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 13, color: "rgba(255,255,255,0.25)" }}>gerando arquitetura editorial...</div>
+          <div style={{ marginTop: 20, fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 13 }}>
+            <ShinyText
+              text="gerando arquitetura editorial..."
+              speed={2}
+              delay={0}
+              color="rgba(255,255,255,0.25)"
+              shineColor="#ffffff"
+              spread={120}
+              direction="left"
+            />
+          </div>
         </div>
       </div>
 
@@ -231,7 +242,7 @@ const Hero = () => {
 const pillars = [
   { icon: Target, num: "01", name: "Nicho", desc: "Defina o território onde sua marca opera com precisão cirúrgica." },
   { icon: Users, num: "02", name: "Público", desc: "Mapeie a audiência: comportamentos, desejos e gatilhos." },
-  { icon: Zap, num: "03", name: "Dores", desc: "Identifique as fricções que sua estratégia irá disolver." },
+  { icon: Zap, num: "03", name: "Dores", desc: "Identifique as fricções que sua estratégia irá dissolver." },
   { icon: BarChart3, num: "04", name: "Objetivo", desc: "KPIs reais: alcance, autoridade ou conversão direta." },
   { icon: PenTool, num: "05", name: "Tom de Voz", desc: "A personalidade editorial que ressoa com sua audiência." },
 ];
@@ -252,16 +263,16 @@ const Formula = () => (
       {pillars.map((p, i) => {
         const Icon = p.icon;
         return (
-          <R key={i} delay={i * 0.1} style={{ flex: "1 1 180px", maxWidth: 210, zIndex: 1 }}>
-            <div style={{ background: T.white, border: `1px solid ${T.border}`, padding: "48px 24px 36px", textAlign: "center", transition: "all 0.3s" }}
+          <R key={i} delay={i * 0.1} style={{ flex: "1 1 180px", maxWidth: 210, zIndex: 1, display: "flex", flexDirection: "column" }}>
+            <div style={{ background: T.white, border: `1px solid ${T.border}`, padding: "48px 24px 36px", textAlign: "center", transition: "all 0.3s", flex: 1, display: "flex", flexDirection: "column" }}
               onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 16px 56px rgba(0,0,0,0.08)"; e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.borderColor = T.borderStrong; }}
               onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; e.currentTarget.style.borderColor = T.border; }}>
-              <div style={{ width: 46, height: 46, border: `1px solid ${T.borderStrong}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <div style={{ width: 46, height: 46, border: `1px solid ${T.borderStrong}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", flexShrink: 0 }}>
                 <Icon size={17} color={T.black} />
               </div>
               <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 10, letterSpacing: 3, color: T.faint, marginBottom: 8 }}>{p.num}</div>
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 21, fontWeight: 500, color: T.black, marginBottom: 10 }}>{p.name}</h3>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300, fontSize: 12, color: T.muted, lineHeight: 1.7 }}>{p.desc}</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300, fontSize: 12, color: T.muted, lineHeight: 1.7, marginTop: 0 }}>{p.desc}</p>
             </div>
           </R>
         );
@@ -388,19 +399,21 @@ const MultiFormat = () => (
       {formats.map((f, i) => {
         const Icon = f.icon;
         return (
-          <R key={i} delay={i * 0.09}>
-            <div style={{ background: T.offwhite, border: `1px solid ${T.border}`, padding: "44px 32px", transition: "all 0.3s" }}
+          <R key={i} delay={i * 0.09} style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ background: T.offwhite, border: `1px solid ${T.border}`, padding: "44px 32px", transition: "all 0.3s", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}
               onMouseEnter={e => { e.currentTarget.style.background = T.white; e.currentTarget.style.boxShadow = "0 16px 56px rgba(0,0,0,0.07)"; e.currentTarget.style.borderColor = T.borderStrong; e.currentTarget.style.transform = "translateY(-5px)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = T.offwhite; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
-                <div style={{ width: 42, height: 42, border: `1px solid ${T.borderStrong}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon size={16} color={T.black} />
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
+                  <div style={{ width: 42, height: 42, border: `1px solid ${T.borderStrong}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={16} color={T.black} />
+                  </div>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: T.muted, border: `1px solid ${T.border}`, padding: "4px 10px" }}>{f.tag}</span>
                 </div>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: T.muted, border: `1px solid ${T.border}`, padding: "4px 10px" }}>{f.tag}</span>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 21, fontWeight: 500, color: T.black, marginBottom: 10 }}>{f.name}</h3>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300, fontSize: 13, color: T.muted, lineHeight: 1.75, marginBottom: 20 }}>{f.desc}</p>
               </div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 21, fontWeight: 500, color: T.black, marginBottom: 10 }}>{f.name}</h3>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300, fontSize: 13, color: T.muted, lineHeight: 1.75, marginBottom: 20 }}>{f.desc}</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: "auto" }}>
                 {f.chips.map(c => <span key={c} style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${T.border}`, color: T.muted }}>{c}</span>)}
               </div>
             </div>
@@ -498,13 +511,15 @@ const Social = () => (
     </R>
     <div style={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap", maxWidth: 1020, margin: "0 auto" }}>
       {testimonials.map((t, i) => (
-        <R key={i} delay={i * 0.1}>
-          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderTop: `2px solid ${T.black}`, padding: "40px 34px", flex: "1 1 280px", maxWidth: 330, textAlign: "left", transition: "transform 0.3s, box-shadow 0.3s" }}
+        <R key={i} delay={i * 0.1} style={{ flex: "1 1 280px", maxWidth: 330, display: "flex", flexDirection: "column" }}>
+          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderTop: `2px solid ${T.black}`, padding: "40px 34px", textAlign: "left", transition: "transform 0.3s, box-shadow 0.3s", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 20px 60px rgba(0,0,0,0.07)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-            <Quote size={15} color={T.black} style={{ marginBottom: 18, opacity: 0.15 }} />
-            <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 16, fontWeight: 400, color: "#333", lineHeight: 1.75, marginBottom: 22 }}>"{t.quote}"</p>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div>
+              <Quote size={15} color={T.black} style={{ marginBottom: 18, opacity: 0.15 }} />
+              <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 16, fontWeight: 400, color: "#333", lineHeight: 1.75, marginBottom: 22 }}>"{t.quote}"</p>
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: "auto" }}>
               <div style={{ width: 28, height: 28, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Star size={10} color={T.black} fill={T.black} />
               </div>
@@ -609,65 +624,15 @@ const Footer = () => (
 /* ════════════════════════════
    PRICING
 ════════════════════════════ */
-const plans = [
-  {
-    id: "essencial",
-    name: "Essencial",
-    sub: "O Ponto de Entrada",
-    price: "97",
-    period: "/mês",
-    audience: "Para criadores solo e iniciantes no estrategismo.",
-    cta: "Começar Agora",
-    featured: false,
-    items: [
-      "5 Arquiteturas Editoriais por mês",
-      "Formulário Estratégico Guiado",
-      "Exportação em PDF Padrão",
-      "Acesso a 3 Presets Básicos",
-      "Suporte via E-mail",
-    ],
-  },
-  {
-    id: "elite",
-    name: "Elite",
-    sub: "O Padrão de Agência",
-    price: "297",
-    period: "/mês",
-    audience: "Para estrategistas, social medias e agências boutique.",
-    cta: "Tornar-me Elite",
-    featured: true,
-    tag: "RECOMENDADO",
-    items: [
-      "Gerações Ilimitadas (I.A Gemini)",
-      "Exportação PDF A3 Estratégico",
-      "12+ Presets de Luxo (Classic Gold, Dark Onyx…)",
-      "Branding: Marca d'água + Assinatura Tripla",
-      "Histórico de até 10 Projetos Ativos",
-      "Suporte Prioritário",
-    ],
-  },
-  {
-    id: "master",
-    name: "Master Black",
-    sub: "Alta Consultoria",
-    price: "1.200",
-    period: "/ano",
-    audience: "Para consultores premium, grandes agências e educadores.",
-    cta: "Entrar para o Master Black",
-    featured: false,
-    items: [
-      "Tudo do Plano Elite",
-      "Modo White-Label (sem marca Studio OS)",
-      "Suporte VIP via WhatsApp",
-      "Presets Exclusivos e Customizados",
-      "Mentoria Trimestral em Grupo",
-    ],
-  },
-];
+import { PLANS as plans } from "../plans";
 
-const PricingCard = ({ plan, index }) => {
+
+const PricingCard = ({ plan, index, cycle }) => {
   const [hov, setHov] = useState(false);
   const f = plan.featured;
+  const isAnual = cycle === 'anual';
+  const price = isAnual ? plan.priceAnual : plan.priceMensal;
+  const period = isAnual ? plan.periodAnual : plan.periodMensal;
 
   return (
     <R delay={index * 0.12} style={{ flex: "1 1 280px", maxWidth: 360, display: "flex" }}>
@@ -728,23 +693,33 @@ const PricingCard = ({ plan, index }) => {
         </div>
 
         {/* price */}
-        <div style={{ marginBottom: 36, display: "flex", alignItems: "flex-end", gap: 4 }}>
-          <span style={{
-            fontFamily: "'Playfair Display', serif", fontStyle: "italic",
-            fontSize: 13, fontWeight: 400,
-            color: f ? "rgba(255,255,255,0.5)" : T.muted,
-            marginBottom: 10,
-          }}>R$</span>
-          <span style={{
-            fontFamily: "'Playfair Display', serif", fontWeight: 700,
-            fontSize: 56, lineHeight: 1, letterSpacing: -2,
-            color: f ? T.white : T.black,
-          }}>{plan.price}</span>
-          <span style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 10,
-            color: f ? "rgba(255,255,255,0.35)" : T.muted,
-            marginBottom: 10, letterSpacing: 1,
-          }}>{plan.period}</span>
+        <div style={{ marginBottom: 36, display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
+            <span style={{
+              fontFamily: "'Playfair Display', serif", fontStyle: "italic",
+              fontSize: 13, fontWeight: 400,
+              color: f ? "rgba(255,255,255,0.5)" : T.muted,
+              marginBottom: 10,
+            }}>R$</span>
+            <span style={{
+              fontFamily: "'Playfair Display', serif", fontWeight: 700,
+              fontSize: 56, lineHeight: 1, letterSpacing: -2,
+              color: f ? T.white : T.black,
+            }}>{price}</span>
+            <span style={{
+              fontFamily: "'Syne', sans-serif", fontSize: 10,
+              color: f ? "rgba(255,255,255,0.35)" : T.muted,
+              marginBottom: 10, letterSpacing: 1,
+            }}>{period}</span>
+          </div>
+          {isAnual && plan.equivalentMensalAnual && (
+            <span style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 400,
+              color: f ? "#28ca41" : "#0d7c22", opacity: 0.9, marginTop: -4
+            }}>
+              {plan.equivalentMensalAnual}
+            </span>
+          )}
         </div>
 
         {/* divider */}
@@ -769,19 +744,26 @@ const PricingCard = ({ plan, index }) => {
         </ul>
 
         {/* CTA */}
-        <PricingCTA plan={plan} />
+        <PricingCTA plan={plan} cycle={cycle} />
       </div>
     </R>
   );
 };
 
-const PricingCTA = ({ plan }) => {
+const PricingCTA = ({ plan, cycle }) => {
   const [h, sH] = useState(false);
   const f = plan.featured;
   const navigate = useNavigate();
+
+  const handleSelectPlan = () => {
+    sessionStorage.setItem('selected_plan_id', plan.id);
+    sessionStorage.setItem('selected_billing_cycle', cycle);
+    navigate('/checkout');
+  };
+
   return (
     <button
-      onClick={() => navigate('/checkout')}
+      onClick={handleSelectPlan}
       onMouseEnter={() => sH(true)}
       onMouseLeave={() => sH(false)}
       style={{
@@ -803,51 +785,85 @@ const PricingCTA = ({ plan }) => {
   );
 };
 
-const Pricing = () => (
-  <section id="planos" style={{ background: T.offwhite, padding: "130px 24px", position: "relative", overflow: "hidden" }}>
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none",
-      backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)",
-      backgroundSize: "40px 40px" }} />
+const Pricing = () => {
+  const [cycle, setCycle] = useState('mensal');
 
-    <R style={{ textAlign: "center", marginBottom: 80 }}>
-      <Label>Planos & Preços</Label>
-      <Rule style={{ marginBottom: 40 }} />
-      <h2 style={{
-        fontFamily: "'Playfair Display', serif", fontWeight: 400,
-        fontSize: "clamp(34px,5vw,62px)", color: T.black,
-        maxWidth: 680, margin: "0 auto 20px", lineHeight: 1.1,
-      }}>
-        Escolha o nível<br />
-        <em style={{ fontStyle: "italic", opacity: 0.35 }}>da sua arquitetura.</em>
-      </h2>
-      <p style={{
-        fontFamily: "'Inter', sans-serif", fontWeight: 300,
-        fontSize: 15, color: T.muted, maxWidth: 460,
-        margin: "0 auto", lineHeight: 1.85,
-      }}>
-        De criadores solo a agências de alta performance — cada plano foi calibrado para elevar sua entrega ao próximo nível.
-      </p>
-    </R>
+  return (
+    <section id="planos" style={{ background: T.offwhite, padding: "130px 24px", position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none",
+        backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)",
+        backgroundSize: "40px 40px" }} />
 
-    <div style={{
-      display: "flex", gap: 2, justifyContent: "center",
-      alignItems: "stretch", flexWrap: "wrap",
-      maxWidth: 1080, margin: "0 auto 60px",
-    }}>
-      {plans.map((plan, i) => <PricingCard key={plan.id} plan={plan} index={i} />)}
-    </div>
+      <R style={{ textAlign: "center", marginBottom: 50 }}>
+        <Label>Planos & Preços</Label>
+        <Rule style={{ marginBottom: 40 }} />
+        <h2 style={{
+          fontFamily: "'Playfair Display', serif", fontWeight: 400,
+          fontSize: "clamp(34px,5vw,62px)", color: T.black,
+          maxWidth: 680, margin: "0 auto 20px", lineHeight: 1.1,
+        }}>
+          Escolha o nível<br />
+          <em style={{ fontStyle: "italic", opacity: 0.35 }}>da sua arquitetura.</em>
+        </h2>
+        <p style={{
+          fontFamily: "'Inter', sans-serif", fontWeight: 300,
+          fontSize: 15, color: T.muted, maxWidth: 460,
+          margin: "0 auto", lineHeight: 1.85,
+        }}>
+          De criadores solo a agências de alta performance — cada plano foi calibrado para elevar sua entrega ao próximo nível.
+        </p>
 
-    {/* bottom note */}
-    <R style={{ textAlign: "center" }}>
-      <p style={{
-        fontFamily: "'Inter', sans-serif", fontWeight: 300,
-        fontSize: 12, color: T.faint, letterSpacing: 0.5,
+        {/* Switch Faturamento Mensal / Anual */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: T.white, border: `1px solid ${T.border}`, padding: "6px 8px", borderRadius: 40, marginTop: 32, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <button
+            onClick={() => setCycle('mensal')}
+            style={{
+              fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase",
+              padding: "10px 20px", borderRadius: 30, border: "none", cursor: "pointer", transition: "all 0.25s",
+              background: cycle === 'mensal' ? T.black : "transparent",
+              color: cycle === 'mensal' ? T.white : T.muted,
+            }}
+          >
+            Plano Mensal
+          </button>
+          <button
+            onClick={() => setCycle('anual')}
+            style={{
+              fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase",
+              padding: "10px 20px", borderRadius: 30, border: "none", cursor: "pointer", transition: "all 0.25s",
+              display: "flex", alignItems: "center", gap: 8,
+              background: cycle === 'anual' ? T.black : "transparent",
+              color: cycle === 'anual' ? T.white : T.muted,
+            }}
+          >
+            <span>Plano Anual</span>
+            {/* <span style={{ background: cycle === 'anual' ? "#28ca41" : T.black, color: T.white, fontSize: 8, padding: "3px 8px", borderRadius: 10, fontWeight: 800 }}>
+              ECONOMIZE ATÉ 30%
+            </span> */}
+          </button>
+        </div>
+      </R>
+
+      <div style={{
+        display: "flex", gap: 2, justifyContent: "center",
+        alignItems: "stretch", flexWrap: "wrap",
+        maxWidth: 1080, margin: "0 auto 60px",
       }}>
-        Todos os planos incluem 7 dias de garantia incondicional. Sem fidelidade. Cancele quando quiser.
-      </p>
-    </R>
-  </section>
-);
+        {plans.map((plan, i) => <PricingCard key={plan.id} plan={plan} index={i} cycle={cycle} />)}
+      </div>
+
+      {/* bottom note */}
+      <R style={{ textAlign: "center" }}>
+        <p style={{
+          fontFamily: "'Inter', sans-serif", fontWeight: 300,
+          fontSize: 12, color: T.faint, letterSpacing: 0.5,
+        }}>
+          Todos os planos incluem 7 dias de garantia incondicional. Sem fidelidade. Cancele quando quiser.
+        </p>
+      </R>
+    </section>
+  );
+};
 
 /* ── ROOT ── */
 export default function ArquiteturaEditorialV16() {

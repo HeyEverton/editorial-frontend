@@ -6,9 +6,13 @@ import Home from './components/Home';
 import CreateProject from './components/CreateProject';
 import Settings from './components/Settings';
 import Profile from './components/Profile';
+import { RolesManagement } from './components/admin/RolesManagement';
+import { PermissionsManagement } from './components/admin/PermissionsManagement';
+import { AbilityProvider } from './context/AbilityContext';
 // @ts-ignore
 import ArquiteturaEditorialV16 from './components/ArquiteturaEditorialV16';
-import { logout, isAuthenticated, verifyToken, getCurrentUser, User } from './services/authService';
+import Checkout from './components/Checkout';
+import { logout, isAuthenticated, verifyToken, User } from './services/authService';
 
 const EliteApp: React.FC<{
   user: User | null;
@@ -49,27 +53,29 @@ const EliteApp: React.FC<{
   }
 
   return (
-    <MainLayout 
-      activeScreen={activeScreen} 
-      setActiveScreen={setActiveScreen} 
-      onLogout={handleLogout}
-      userName={user?.nome || "CURADOR DIGITAL"}
-      isDarkMode={isDarkMode}
-      setIsDarkMode={setIsDarkMode}
-    >
-      <Routes>
-        <Route index element={<Navigate to="home" replace />} />
-        <Route path="home" element={<Home />} />
-        <Route path="criar" element={<CreateProject />} />
-        <Route path="configuracoes" element={<Settings />} />
-        <Route path="perfil" element={<Profile />} />
-        <Route path="*" element={<Navigate to="home" replace />} />
-      </Routes>
-    </MainLayout>
+    <AbilityProvider user={user}>
+      <MainLayout 
+        activeScreen={activeScreen} 
+        setActiveScreen={setActiveScreen} 
+        onLogout={handleLogout}
+        userName={user?.nome || "CURADOR DIGITAL"}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+      >
+        <Routes>
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<Home />} />
+          <Route path="criar" element={<CreateProject />} />
+          <Route path="configuracoes" element={<Settings />} />
+          <Route path="perfil" element={<Profile />} />
+          <Route path="perfis" element={<RolesManagement />} />
+          <Route path="permissoes" element={<PermissionsManagement />} />
+          <Route path="*" element={<Navigate to="home" replace />} />
+        </Routes>
+      </MainLayout>
+    </AbilityProvider>
   );
 };
-
-import Checkout from './components/Checkout';
 
 const App: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
@@ -137,6 +143,5 @@ const App: React.FC = () => {
     </BrowserRouter>
   );
 };
-
 
 export default App;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAbility } from '../context/AbilityContext';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -19,6 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   userName = "CURADOR DIGITAL",
   onCloseMobile
 }) => {
+  const ability = useAbility();
+
   const menuItems = [
     { id: 'home', label: 'HOME', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,6 +34,30 @@ const Sidebar: React.FC<SidebarProps> = ({
       </svg>
     )},
   ];
+
+  if (ability.can('list', 'roles') || ability.can('manage', 'all')) {
+    menuItems.push({
+      id: 'perfis',
+      label: 'PERFIS',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    });
+  }
+
+  if (ability.can('list', 'permission') || ability.can('manage', 'all')) {
+    menuItems.push({
+      id: 'permissoes',
+      label: 'PERMISSÕES',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      )
+    });
+  }
 
   const bottomItems = [
     { id: 'configuracoes', label: 'CONFIGURAÇÕES', icon: (
@@ -48,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div 
-      className={`no-print h-screen border-r flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-full md:w-72'} ${activeScreen === 'perfil' ? '' : 'bg-[#f5f5f5] dark:bg-elite-dark border-gray-100 dark:border-white/5'}`}
+      className={`no-print h-screen border-r flex flex-col transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isCollapsed ? 'w-20' : 'w-full md:w-72'} ${activeScreen === 'perfil' ? '' : 'bg-[#f5f5f5] dark:bg-elite-dark border-gray-100 dark:border-white/5'}`}
       style={{
         backgroundColor: activeScreen === 'perfil' ? (document.documentElement.classList.contains('dark') ? '#0d0d0d' : '#f5f5f5') : undefined
       }}
@@ -56,13 +83,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Header / Logo */}
       <div className="p-8 pb-12 flex items-center justify-between overflow-hidden">
         {!isCollapsed && (
-          <div className="animate-in fade-in duration-500">
+          <div className="animate-in fade-in duration-300">
             <h1 className="serif text-xl font-bold italic leading-tight tracking-tight">Arquitetura Editorial</h1>
             <p className="text-[8px] font-bold text-gray-400 tracking-[0.4em] uppercase">THE DIGITAL CURATOR</p>
           </div>
         )}
         {isCollapsed && (
-             <div className="flex justify-center w-full">
+             <div className="flex justify-center w-full animate-in fade-in duration-300">
                 <span className="serif text-2xl font-black italic">A</span>
              </div>
         )}
@@ -85,18 +112,18 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             key={item.id}
             onClick={() => setActiveScreen(item.id)}
-            className={`w-full flex items-center gap-4 p-4 transition-all group relative ${activeScreen === item.id ? 'bg-white dark:bg-white/5 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-200 group relative ${activeScreen === item.id ? 'bg-white dark:bg-white/5 shadow-sm' : 'hover:bg-white/60 dark:hover:bg-white/5'}`}
           >
-            <div className={`${activeScreen === item.id ? 'text-black dark:text-white' : 'text-gray-400 group-hover:text-black dark:group-hover:text-white'}`}>
+            <div className={`transition-transform duration-200 group-hover:scale-110 ${activeScreen === item.id ? 'text-black dark:text-white' : 'text-gray-400 group-hover:text-black dark:group-hover:text-white'}`}>
               {item.icon}
             </div>
             {!isCollapsed && (
-              <span className={`text-[10px] font-bold tracking-[0.2em] animate-in fade-in slide-in-from-left-4 duration-300 ${activeScreen === item.id ? 'text-black dark:text-white' : 'text-gray-400 group-hover:text-black dark:group-hover:text-white'}`}>
+              <span className={`text-[10px] font-bold tracking-[0.2em] animate-in fade-in slide-in-from-left-2 duration-200 ${activeScreen === item.id ? 'text-black dark:text-white' : 'text-gray-400 group-hover:text-black dark:group-hover:text-white'}`}>
                 {item.label}
               </span>
             )}
             {!isCollapsed && activeScreen === item.id && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-black dark:bg-white" />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-l bg-black dark:bg-white animate-in fade-in duration-200" />
             )}
           </button>
         ))}
@@ -106,15 +133,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-t border-gray-100/50 dark:border-white/5 space-y-2">
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full flex items-center gap-4 p-4 text-gray-400 hover:text-black dark:hover:text-white transition-all group"
+          className="w-full flex items-center gap-4 p-4 text-gray-400 hover:text-black dark:hover:text-white transition-all duration-200 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 group"
           title={isCollapsed ? "Expandir" : "Recolher"}
         >
-          <div className="transition-transform duration-300" style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <div className="transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]" style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
           </div>
-          {!isCollapsed && <span className="text-[10px] font-bold tracking-[0.2em]">RECOLHER</span>}
+          {!isCollapsed && <span className="text-[10px] font-bold tracking-[0.2em] animate-in fade-in duration-200">RECOLHER</span>}
         </button>
 
         <div className="h-px bg-gray-100 dark:bg-white/5 my-2" />
