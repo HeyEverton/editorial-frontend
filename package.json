@@ -12,11 +12,13 @@
   "dependencies": {
     "@casl/ability": "^7.0.1",
     "@casl/react": "^7.0.1",
+    "apexcharts": "^6.7.0",
     "axios": "^1.6.7",
     "html-to-image": "^1.11.11",
     "lucide-react": "^1.14.0",
     "motion": "^13.0.0",
     "react": "^19.0.0",
+    "react-apexcharts": "^2.1.1",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.14.2",
     "serve": "^14.2.4"

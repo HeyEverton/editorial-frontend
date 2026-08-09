@@ -8,6 +8,8 @@ import Settings from './components/Settings';
 import Profile from './components/Profile';
 import { RolesManagement } from './components/admin/RolesManagement';
 import { PermissionsManagement } from './components/admin/PermissionsManagement';
+import { UsersManagement } from './components/admin/UsersManagement';
+import { AnalyticsDashboard } from './components/admin/AnalyticsDashboard';
 import { AbilityProvider } from './context/AbilityContext';
 // @ts-ignore
 import ArquiteturaEditorialV16 from './components/ArquiteturaEditorialV16';
@@ -68,6 +70,8 @@ const EliteApp: React.FC<{
           <Route path="criar" element={<CreateProject />} />
           <Route path="configuracoes" element={<Settings />} />
           <Route path="perfil" element={<Profile />} />
+          <Route path="usuarios" element={<UsersManagement />} />
+          <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="perfis" element={<RolesManagement />} />
           <Route path="permissoes" element={<PermissionsManagement />} />
           <Route path="*" element={<Navigate to="home" replace />} />
