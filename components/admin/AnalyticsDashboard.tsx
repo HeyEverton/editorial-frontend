@@ -44,22 +44,43 @@ interface AnalyticsData {
   }>;
 }
 
-export const AnalyticsDashboard: React.FC = () => {
+interface AnalyticsDashboardProps {
+  currentUser?: any;
+}
+
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ currentUser }) => {
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | '1a'>('30d');
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [userData, setUserData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const token = localStorage.getItem('auth_token');
 
+  const isAdmin = currentUser?.isSystemAdmin || 
+                  currentUser?.role === 'Admin System' || 
+                  currentUser?.role === 'ADMIN' || 
+                  currentUser?.role === 'Admin' ||
+                  (typeof currentUser?.role === 'string' && currentUser.role.toLowerCase().includes('admin'));
+
   const fetchAnalytics = async (p: string) => {
     try {
       setIsLoading(true);
-      const res = await fetch(`http://localhost:3001/api/admin/analytics?period=${p}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const result = await res.json();
-        setData(result);
+      if (isAdmin) {
+        const res = await fetch(`http://localhost:3001/api/admin/analytics?period=${p}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const result = await res.json();
+          setData(result);
+        }
+      } else {
+        const res = await fetch(`http://localhost:3001/api/user/analytics?period=${p}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const result = await res.json();
+          setUserData(result);
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar dados de analytics:', err);
@@ -70,7 +91,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchAnalytics(period);
-  }, [period]);
+  }, [period, isAdmin]);
 
   const dates = data?.timeSeries.map((t) => t.date) || [];
   const genSeries = data?.timeSeries.map((t) => t.generations) || [];
@@ -153,6 +174,263 @@ export const AnalyticsDashboard: React.FC = () => {
     dataLabels: { enabled: true },
     tooltip: { theme: isDark ? 'dark' : 'light' },
   };
+
+  if (!isAdmin) {
+    const userDates = userData?.timeSeries.map((t: any) => t.date) || [];
+    const userGenSeries = userData?.timeSeries.map((t: any) => t.generations) || [];
+
+    const userGenChartOptions: any = {
+      chart: { type: 'area', toolbar: { show: false }, background: 'transparent' },
+      colors: ['#8b5cf6'],
+      stroke: { curve: 'smooth', width: 2 },
+      fill: {
+        type: 'gradient',
+        gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 },
+      },
+      xaxis: { categories: userDates, labels: { style: { colors: textColor, fontSize: '10px' } } },
+      yaxis: { labels: { style: { colors: textColor, fontSize: '10px' } } },
+      grid: { borderColor: gridColor },
+      tooltip: { theme: isDark ? 'dark' : 'light' },
+    };
+
+    const userFormatChartOptions: any = {
+      chart: { type: 'donut', background: 'transparent' },
+      labels: userData?.formatDistribution.map((f: any) => f.name) || [],
+      colors: ['#6366f1', '#10b981', '#f59e0b', '#ec4899'],
+      legend: { position: 'bottom', labels: { colors: textColor } },
+      stroke: { show: false },
+      dataLabels: { enabled: true },
+      tooltip: { theme: isDark ? 'dark' : 'light' },
+    };
+
+    const genPercentage = Math.min(100, Math.round(((userData?.user.generationsThisMonth || 0) / (userData?.user.maxGenerations || 1)) * 100));
+
+    return (
+      <div className="min-h-full bg-[#fcfcfc] dark:bg-elite-black transition-colors duration-500 font-sans">
+        <div className="p-6 sm:p-12 space-y-12 sm:space-y-16 max-w-7xl mx-auto overflow-hidden animate-in fade-in duration-500">
+          <header className="space-y-6">
+            <div className="flex items-center gap-4">
+              <span className="text-[9px] font-bold text-black/40 dark:text-white/40 tracking-[0.4em] uppercase">
+                MINHAS MÉTRICAS & PRODUTIVIDADE ESTRATÉGICA
+              </span>
+              <div className="h-px w-20 bg-black/5 dark:bg-white/5" />
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+              <div>
+                <h1 className="serif text-4xl sm:text-7xl italic font-light tracking-tighter text-black dark:text-white leading-tight mb-3">
+                  Analytics Pessoal
+                </h1>
+                <p className="text-[11px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em] uppercase leading-relaxed max-w-xl">
+                  Acompanhe seu consumo de tokens, gerações de IA e histórico de produção de manuscritos.
+                </p>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex border border-gray-200 dark:border-white/10 p-1 bg-white dark:bg-elite-gray shrink-0">
+                {(['7d', '30d', '90d', '1a'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setPeriod(t)}
+                    className={`px-4 py-2 text-[9px] font-black tracking-[0.2em] uppercase transition-all ${
+                      period === t
+                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                        : 'text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-px w-40 bg-black/10 dark:bg-white/10 mt-8" />
+          </header>
+
+          {isLoading ? (
+            <div className="py-24 text-center space-y-4">
+              <div className="w-8 h-8 border-2 border-black dark:border-white border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">Carregando dados de produção...</p>
+            </div>
+          ) : (
+            <>
+              {/* ── 4 CARDS HERO PESSOAIS ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                {/* Card 1: Saldo de Tokens */}
+                <div className="p-6 sm:p-8 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[8px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase">
+                      SALDO DISPONÍVEL
+                    </span>
+                    <div className="p-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                      <Zap size={16} className="text-black dark:text-white" />
+                    </div>
+                  </div>
+                  <div className="space-y-1 py-4">
+                    <h2 className="serif text-4xl italic font-bold text-black dark:text-white">
+                      {userData?.user?.tokensLeft || 0}
+                    </h2>
+                    <span className="text-[9px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em] uppercase block">
+                      Tokens em conta
+                    </span>
+                  </div>
+                  <div className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 tracking-[0.2em] uppercase">
+                    Status: Ativo
+                  </div>
+                </div>
+
+                {/* Card 2: Total de Projetos */}
+                <div className="p-6 sm:p-8 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[8px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase">
+                      MANUSCRITOS CRIADOS
+                    </span>
+                    <div className="p-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                      <FolderCheck size={16} className="text-black dark:text-white" />
+                    </div>
+                  </div>
+                  <div className="space-y-1 py-4">
+                    <h2 className="serif text-4xl italic font-bold text-black dark:text-white">
+                      {userData?.user?.totalProjects || 0}
+                    </h2>
+                    <span className="text-[9px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em] uppercase block">
+                      Projetos em seu acervo
+                    </span>
+                  </div>
+                  <div className="text-[8px] font-bold text-gray-400 tracking-[0.2em] uppercase">
+                    Salvos no Banco de Dados
+                  </div>
+                </div>
+
+                {/* Card 3: Média Semanal */}
+                <div className="p-6 sm:p-8 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[8px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase">
+                      MÉDIA DE PRODUÇÃO
+                    </span>
+                    <div className="p-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                      <TrendingUp size={16} className="text-black dark:text-white" />
+                    </div>
+                  </div>
+                  <div className="space-y-1 py-4">
+                    <h2 className="serif text-4xl italic font-bold text-black dark:text-white">
+                      {userData?.user?.weeklyAverage || 0}
+                    </h2>
+                    <span className="text-[9px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em] uppercase block">
+                      Projetos por semana
+                    </span>
+                  </div>
+                  <div className="text-[8px] font-bold text-gray-400 tracking-[0.2em] uppercase">
+                    Ritmo de Criação
+                  </div>
+                </div>
+
+                {/* Card 4: Uso do Plano */}
+                <div className="p-6 sm:p-8 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/10 flex flex-col justify-between shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[8px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase">
+                      GERAÇÕES DE I.A NO MÊS
+                    </span>
+                    <div className="p-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                      <Award size={16} className="text-black dark:text-white" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 py-4">
+                    <div className="flex justify-between items-baseline">
+                      <h2 className="serif text-3xl italic font-bold text-black dark:text-white">
+                        {userData?.user?.generationsThisMonth || 0} / {userData?.user?.maxGenerations || 50}
+                      </h2>
+                    </div>
+                    {/* Barra de Progresso */}
+                    <div className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-black dark:bg-white transition-all duration-500" 
+                        style={{ width: `${genPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-[8px] font-bold text-gray-400 dark:text-white/40 tracking-[0.2em] uppercase">
+                    Plano {userData?.user?.planName || 'Essencial'} ({genPercentage}% usado)
+                  </div>
+                </div>
+              </div>
+
+              {/* ── GRÁFICOS PESSOAIS (GERAÇÕES E DISTRIBUIÇÃO DE FORMATO) ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+                {/* Gráfico 1: Gerações no período */}
+                <div className="lg:col-span-2 p-6 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/5 space-y-4">
+                  <span className="text-[9px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase block">
+                    EVOLUÇÃO DAS SUAS GERAÇÕES NO PERÍODO
+                  </span>
+                  <Chart
+                    options={userGenChartOptions}
+                    series={[{ name: 'Suas Gerações', data: userGenSeries }]}
+                    type="area"
+                    height={250}
+                  />
+                </div>
+
+                {/* Gráfico 2: Formatos mais Utilizados */}
+                <div className="p-6 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/5 space-y-4">
+                  <span className="text-[9px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase block">
+                    FORMATOS MAIS UTILIZADOS
+                  </span>
+                  <Chart
+                    options={userFormatChartOptions}
+                    series={userData?.formatDistribution?.map((f: any) => f.count) || []}
+                    type="donut"
+                    height={250}
+                  />
+                </div>
+              </div>
+
+              {/* ── HISTÓRICO DE MANUSCRITOS RECENTES ── */}
+              <div className="p-6 bg-white dark:bg-elite-gray border border-gray-100 dark:border-white/5 space-y-6 pt-4">
+                <span className="text-[9px] font-black text-gray-400 dark:text-white/30 tracking-[0.4em] uppercase block">
+                  MEUS MANUSCRITOS RECENTES
+                </span>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-white/5 text-[9px] font-black tracking-[0.3em] uppercase text-gray-400">
+                        <th className="py-3 px-2">NOME DO PROJETO</th>
+                        <th className="py-3 px-2">DESCRIÇÃO ESTRATÉGICA</th>
+                        <th className="py-3 px-2 text-right">ÚLTIMA ATUALIZAÇÃO</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+                      {userData?.recentProjects && userData.recentProjects.length > 0 ? (
+                        userData.recentProjects.map((p: any) => (
+                          <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
+                            <td className="py-4 px-2 font-bold text-black dark:text-white uppercase tracking-wider">
+                              {p.name}
+                            </td>
+                            <td className="py-4 px-2 text-gray-500 dark:text-white/50 text-[11px]">
+                              {p.shortDescription}
+                            </td>
+                            <td className="py-4 px-2 text-right font-mono text-[10px] text-gray-400">
+                              {new Date(p.updatedAt).toLocaleString('pt-BR')}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="py-8 text-center text-gray-400 text-xs">
+                            Nenhum projeto encontrado no seu acervo pessoal.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-[#fcfcfc] dark:bg-elite-black transition-colors duration-500 font-sans">

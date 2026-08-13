@@ -16,14 +16,35 @@ import ArquiteturaEditorialV16 from './components/ArquiteturaEditorialV16';
 import Checkout from './components/Checkout';
 import { logout, isAuthenticated, verifyToken, User } from './services/authService';
 
+import { ThemeMode } from './components/ThemeToggle';
+
+const isAdminUser = (user: User | null): boolean => {
+  if (!user) return false;
+  if (user.isSystemAdmin) return true;
+  const roleName = (user.role || '').toLowerCase();
+  return roleName.includes('admin');
+};
+
+const ProtectedRoute: React.FC<{
+  user: User | null;
+  requireAdmin?: boolean;
+  children: React.ReactElement;
+}> = ({ user, requireAdmin = false, children }) => {
+  if (requireAdmin && !isAdminUser(user)) {
+    return <Navigate to="/elite/home" replace />;
+  }
+  return children;
+};
+
 const EliteApp: React.FC<{
   user: User | null;
   setUser: (user: User | null) => void;
   authenticated: boolean;
   setAuthenticated: (auth: boolean) => void;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
   isDarkMode: boolean;
-  setIsDarkMode: (dark: boolean) => void;
-}> = ({ user, setUser, authenticated, setAuthenticated, isDarkMode, setIsDarkMode }) => {
+}> = ({ user, setUser, authenticated, setAuthenticated, themeMode, setThemeMode, isDarkMode }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -61,8 +82,9 @@ const EliteApp: React.FC<{
         setActiveScreen={setActiveScreen} 
         onLogout={handleLogout}
         userName={user?.nome || "CURADOR DIGITAL"}
+        themeMode={themeMode}
+        setThemeMode={setThemeMode}
         isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
       >
         <Routes>
           <Route index element={<Navigate to="home" replace />} />
@@ -70,10 +92,31 @@ const EliteApp: React.FC<{
           <Route path="criar" element={<CreateProject />} />
           <Route path="configuracoes" element={<Settings />} />
           <Route path="perfil" element={<Profile />} />
-          <Route path="usuarios" element={<UsersManagement />} />
-          <Route path="analytics" element={<AnalyticsDashboard />} />
-          <Route path="perfis" element={<RolesManagement />} />
-          <Route path="permissoes" element={<PermissionsManagement />} />
+          <Route 
+            path="usuarios" 
+            element={
+              <ProtectedRoute user={user} requireAdmin>
+                <UsersManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="analytics" element={<AnalyticsDashboard currentUser={user} />} />
+          <Route 
+            path="perfis" 
+            element={
+              <ProtectedRoute user={user} requireAdmin>
+                <RolesManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="permissoes" 
+            element={
+              <ProtectedRoute user={user} requireAdmin>
+                <PermissionsManagement />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="*" element={<Navigate to="home" replace />} />
         </Routes>
       </MainLayout>
@@ -84,20 +127,47 @@ const EliteApp: React.FC<{
 const App: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [user, setUser] = useState<User | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('themeMode');
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved as ThemeMode;
+    // Migração de preferências antigas
+    const oldSaved = localStorage.getItem('theme');
+    if (oldSaved === 'dark') return 'dark';
+    if (oldSaved === 'light') return 'light';
+    return 'system';
   });
 
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+    const applyTheme = () => {
+      let dark = false;
+      if (themeMode === 'dark') {
+        dark = true;
+      } else if (themeMode === 'light') {
+        dark = false;
+      } else {
+        dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      setIsDarkMode(dark);
+      if (dark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('themeMode', themeMode);
+    };
+
+    applyTheme();
+
+    if (themeMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => applyTheme();
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
     }
-  }, [isDarkMode]);
+  }, [themeMode]);
 
   useEffect(() => {
     if (authenticated) {
@@ -137,8 +207,9 @@ const App: React.FC = () => {
               setUser={setUser} 
               authenticated={authenticated} 
               setAuthenticated={setAuthenticated}
+              themeMode={themeMode}
+              setThemeMode={setThemeMode}
               isDarkMode={isDarkMode}
-              setIsDarkMode={setIsDarkMode}
             />
           } 
         />

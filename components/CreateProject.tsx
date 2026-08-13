@@ -12,6 +12,8 @@ import {
 } from '../services/projectService';
 import DocumentPreview from './DocumentPreview';
 import RotatingText from './RotatingText';
+import { ConfirmDialog } from './ConfirmDialog';
+import { PanelLeftClose, PanelLeftOpen, GripVertical } from 'lucide-react';
 
 const html2pdf = (window as any).html2pdf;
 
@@ -188,12 +190,42 @@ const CreateProject: React.FC = () => {
   const [history, setHistory] = useState<BackendProject[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Estados de Redimensionamento e Ocultação do Painel do Formulário/Studio
+  const [panelWidth, setPanelWidth] = useState<number>(480);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState<boolean>(false);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+
+  const handleMouseDownResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.min(Math.max(startWidth + deltaX, 280), 680);
+      setPanelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
   const [guidedForm, setGuidedForm] = useState({
     nicho: '',
     publico: '',
-    dores: '',
     objetivo: '',
-    tomVoz: ''
+    dores: '',
+    desejos: '',
+    tomVoz: '',
+    diferencial: ''
   });
 
   const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
@@ -275,8 +307,24 @@ const CreateProject: React.FC = () => {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    projectId: number | null;
+    projectName: string;
+  }>({ isOpen: false, projectId: null, projectName: '' });
+
+  const handleOpenDeleteDialog = (e: React.MouseEvent, project: BackendProject) => {
     e.stopPropagation();
+    setDeleteConfirmState({
+      isOpen: true,
+      projectId: project.id,
+      projectName: project.name,
+    });
+  };
+
+  const handleConfirmDeleteProject = async () => {
+    if (!deleteConfirmState.projectId) return;
+    const id = deleteConfirmState.projectId;
     try {
       await deleteProject(id);
       setHistory(prev => prev.filter(p => p.id !== id));
@@ -429,11 +477,13 @@ const CreateProject: React.FC = () => {
 
   const handleGenerateGuided = () => {
     const prompt = `
-      NICHO: ${guidedForm.nicho}
-      PÚBLICO-ALVO: ${guidedForm.publico}
-      DORES E DESEJOS: ${guidedForm.dores}
-      OBJETIVO DA SEMANA: ${guidedForm.objetivo}
-      TOM DE VOZ: ${guidedForm.tomVoz}
+      NICHO DE ATUAÇÃO: ${guidedForm.nicho || 'Não especificado'}
+      PÚBLICO-ALVO: ${guidedForm.publico || 'Não especificado'}
+      OBJETIVO ESTRATÉGICO DA SEMANA: ${guidedForm.objetivo || 'Não especificado'}
+      DORES PRINCIPAIS DO PÚBLICO: ${guidedForm.dores || 'Não especificado'}
+      DESEJOS INCONSCIENTES & ASPIRAÇÕES: ${guidedForm.desejos || 'Não especificado'}
+      TOM DE VOZ & ESTÉTICA DA MARCA: ${guidedForm.tomVoz || 'Não especificado'}
+      DIFERENCIAL OU PRODUTO EM DESTAQUE: ${guidedForm.diferencial || 'Nenhum'}
     `;
     handleGenerate('generative', prompt);
   };
@@ -527,8 +577,13 @@ const CreateProject: React.FC = () => {
             </div>
           </div>
         )}
-        {/* Painel Lateral de Edição */}
-        <aside className="no-print w-full md:w-[500px] border-r border-gray-100 dark:border-white/5 bg-white dark:bg-elite-dark flex flex-col overflow-y-auto">
+        {/* Painel Lateral de Edição (Redimensionável e Ocultável) */}
+        <aside 
+          style={{ width: isPanelCollapsed ? '0px' : `${panelWidth}px` }}
+          className={`no-print border-r border-gray-100 dark:border-white/5 bg-white dark:bg-elite-dark flex flex-col overflow-y-auto shrink-0 relative transition-all duration-300 ease-out ${
+            isPanelCollapsed ? 'w-0 opacity-0 overflow-hidden border-none pointer-events-none' : 'opacity-100'
+          }`}
+        >
           {step === 'inicio' && (
             <div className="p-10 space-y-12 animate-in fade-in duration-500">
                <div className="space-y-4">
@@ -554,7 +609,7 @@ const CreateProject: React.FC = () => {
                          </div>
                          <div className="flex items-center gap-3">
                            <button 
-                             onClick={(e) => handleDelete(e, project.id)}
+                             onClick={(e) => handleOpenDeleteDialog(e, project)}
                              className="text-[9px] text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:underline"
                            >
                              EXCLUIR
@@ -565,7 +620,7 @@ const CreateProject: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              )}
+               )}
 
               <div className="grid grid-cols-1 gap-5 pb-20">
                 {[
@@ -602,40 +657,226 @@ const CreateProject: React.FC = () => {
 
               <div className="p-8 flex-1 overflow-y-auto space-y-12">
                  {studioTab === 'conteudo' && (
-                     <div className="space-y-10">
-                        {/* Campos de Conteúdo */}
+                     <div className="space-y-8 animate-in fade-in duration-300">
+                        {/* Campos Principais do Documento */}
                         <div className="space-y-4">
-                            <label className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-300 dark:text-white/30">TÍTULO PRINCIPAL</label>
-                            <input type="text" value={doc.title} onChange={(e) => updateDoc('title', e.target.value)} className="w-full p-4 text-xs border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 dark:text-white font-bold uppercase tracking-widest outline-none" />
+                            <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">TÍTULO PRINCIPAL</label>
+                            <input 
+                              type="text" 
+                              value={doc.title} 
+                              onChange={(e) => updateDoc('title', e.target.value)} 
+                              className="w-full p-4 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 dark:text-white font-bold uppercase tracking-widest outline-none focus:border-black dark:focus:border-white" 
+                            />
                         </div>
-                        {/* Outros campos... (Simplificado para o fix) */}
+
+                        <div className="space-y-4">
+                            <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">SUBTÍTULO DE IMPACTO</label>
+                            <input 
+                              type="text" 
+                              value={doc.subtitle || ''} 
+                              onChange={(e) => updateDoc('subtitle', e.target.value)} 
+                              placeholder="Insira o subtítulo estratégico..."
+                              className="w-full p-4 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 dark:text-white font-medium outline-none focus:border-black dark:focus:border-white" 
+                            />
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">FRASE DE POSICIONAMENTO</label>
+                            <input 
+                              type="text" 
+                              value={doc.positionPhrase || ''} 
+                              onChange={(e) => updateDoc('positionPhrase', e.target.value)} 
+                              placeholder="Insira a frase de impacto ou conceito do acervo..."
+                              className="w-full p-4 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 dark:text-white font-serif italic outline-none focus:border-black dark:focus:border-white" 
+                            />
+                        </div>
+
+                        {/* Arquitetura Estratégica */}
                         <div className="p-6 bg-gray-50 dark:bg-white/5 space-y-6 border border-gray-100 dark:border-white/10">
-                           <label className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-300 dark:text-white/30">ARQUITETURA ESTRATÉGICA</label>
+                           <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40 block">ARQUITETURA ESTRATÉGICA</label>
                            <div className="space-y-4">
-                              {['feeling', 'pain', 'authority'].map((f) => (
-                                <div key={f} className="space-y-2">
-                                   <label className="text-[8px] font-black text-gray-400 uppercase">{f}</label>
-                                   <input type="text" value={(doc.architecture as any)[f]} onChange={(e) => updateDoc('architecture', { ...doc.architecture, [f]: e.target.value })} className="w-full p-3 text-[10px] border border-gray-100 dark:border-white/10 dark:bg-elite-dark dark:text-white" />
-                                </div>
-                              ))}
+                              <div className="space-y-1">
+                                 <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">SENSAÇÃO DESEJADA (FEELING)</label>
+                                 <input type="text" value={doc.architecture?.feeling || ''} onChange={(e) => updateDoc('architecture', { ...doc.architecture, feeling: e.target.value })} className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-white dark:bg-elite-dark dark:text-white outline-none" />
+                              </div>
+                              <div className="space-y-1">
+                                 <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">DOR ATACADA (PAIN)</label>
+                                 <input type="text" value={doc.architecture?.pain || ''} onChange={(e) => updateDoc('architecture', { ...doc.architecture, pain: e.target.value })} className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-white dark:bg-elite-dark dark:text-white outline-none" />
+                              </div>
+                              <div className="space-y-1">
+                                 <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">ELEMENTO DE AUTORIDADE (AUTHORITY)</label>
+                                 <input type="text" value={doc.architecture?.authority || ''} onChange={(e) => updateDoc('architecture', { ...doc.architecture, authority: e.target.value })} className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-white dark:bg-elite-dark dark:text-white outline-none" />
+                              </div>
                            </div>
                         </div>
                         
+                        {/* Editor de Sessões */}
                         <div className="space-y-5">
-                            <div className="flex justify-between items-center">
-                                <label className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-300 dark:text-white/30">SESSÕES</label>
-                                <button onClick={addSession} className="text-[9px] font-bold uppercase tracking-widest text-black dark:text-white border border-black dark:border-white px-3 py-1 hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-all">
-                                    + ADICIONAR
+                            <div className="flex justify-between items-center border-b border-gray-100 dark:border-white/5 pb-3">
+                                <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">
+                                  SESSÕES DO DOCUMENTO ({doc.sessions.length})
+                                </label>
+                                <button onClick={addSession} className="text-[9px] font-bold uppercase tracking-widest text-black dark:text-white border border-black dark:border-white px-3 py-1.5 hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-all">
+                                    + ADICIONAR SESSÃO
                                 </button>
                             </div>
-                            {doc.sessions.map((s, idx) => (
-                                <div key={idx} className="border border-gray-100 dark:border-white/10 rounded-sm overflow-hidden mb-2">
-                                     <button onClick={() => setEditingSessionIdx(editingSessionIdx === idx ? null : idx)} className={`w-full p-5 text-left text-[11px] font-bold flex justify-between transition-all ${editingSessionIdx === idx ? 'bg-black text-white' : 'bg-white dark:bg-elite-dark dark:text-white'}`}>
-                                        <span>S{idx + 1} • {s.session}</span>
-                                        <span>{editingSessionIdx === idx ? '−' : '+'}</span>
-                                     </button>
-                                </div>
-                            ))}
+                            
+                            {doc.sessions.map((s, idx) => {
+                                const isExpanded = editingSessionIdx === idx;
+                                return (
+                                  <div key={idx} className="border border-gray-200 dark:border-white/10 overflow-hidden mb-3 bg-white dark:bg-elite-dark transition-all">
+                                       <button 
+                                          onClick={() => setEditingSessionIdx(isExpanded ? null : idx)} 
+                                          className={`w-full p-4 text-left text-xs font-bold flex justify-between items-center transition-all ${
+                                            isExpanded ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-50/80 dark:bg-white/5 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                                          }`}
+                                       >
+                                          <div className="flex items-center gap-3">
+                                            <span className="font-mono text-[10px] tracking-wider uppercase opacity-70">
+                                              S{idx + 1}
+                                            </span>
+                                            <span className="serif italic text-sm">{s.theme || s.session || `SESSÃO 0${idx + 1}`}</span>
+                                            {s.format && (
+                                              <span className={`text-[8px] font-black px-2 py-0.5 tracking-widest uppercase ${
+                                                isExpanded ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black' : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/70'
+                                              }`}>
+                                                {s.format}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className="font-mono text-sm">{isExpanded ? '−' : '+'}</span>
+                                       </button>
+
+                                       {/* Formulário Interno de Edição da Sessão */}
+                                       {isExpanded && (
+                                         <div className="p-6 space-y-5 bg-white dark:bg-elite-dark border-t border-gray-100 dark:border-white/5 animate-in fade-in duration-200">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                               <div className="space-y-1">
+                                                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">IDENTIFICADOR</label>
+                                                  <input 
+                                                    type="text" 
+                                                    value={s.session} 
+                                                    onChange={(e) => updateSession(idx, 'session', e.target.value)} 
+                                                    className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white font-bold"
+                                                  />
+                                               </div>
+                                               <div className="space-y-1">
+                                                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">FORMATO</label>
+                                                  <select 
+                                                    value={s.format} 
+                                                    onChange={(e) => updateSession(idx, 'format', e.target.value)} 
+                                                    className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white font-bold uppercase"
+                                                  >
+                                                     <option value="REELS">REELS</option>
+                                                     <option value="CARROSSEL">CARROSSEL</option>
+                                                     <option value="POST ESTÁTICO">POST ESTÁTICO</option>
+                                                     <option value="STORIES">STORIES</option>
+                                                  </select>
+                                               </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                               <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">TEMA / TÍTULO DA SESSÃO</label>
+                                               <input 
+                                                 type="text" 
+                                                 value={s.theme} 
+                                                 onChange={(e) => updateSession(idx, 'theme', e.target.value)} 
+                                                 placeholder="Ex: O erro clássico de preencher antes de tratar..."
+                                                 className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white font-medium"
+                                               />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                               <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">INTENÇÃO ESTRATÉGICA</label>
+                                               <input 
+                                                 type="text" 
+                                                 value={s.strategicIntent} 
+                                                 onChange={(e) => updateSession(idx, 'strategicIntent', e.target.value)} 
+                                                 placeholder="Ex: Conscientizar sobre a firmeza da pele..."
+                                                 className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white"
+                                               />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                               <div className="space-y-1">
+                                                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">DIREÇÃO CRIATIVA / VISUAL</label>
+                                                  <textarea 
+                                                    rows={2}
+                                                    value={s.creativeDirection} 
+                                                    onChange={(e) => updateSession(idx, 'creativeDirection', e.target.value)} 
+                                                    className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white"
+                                                  />
+                                               </div>
+                                               <div className="space-y-1">
+                                                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">PSICOLOGIA DO ESPECTADOR</label>
+                                                  <textarea 
+                                                    rows={2}
+                                                    value={s.viewerPsychology} 
+                                                    onChange={(e) => updateSession(idx, 'viewerPsychology', e.target.value)} 
+                                                    className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white"
+                                                  />
+                                               </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                               <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">ESTRATÉGIA DE ABORDAGEM / GANCHO</label>
+                                               <input 
+                                                 type="text" 
+                                                 value={s.approachStrategy} 
+                                                 onChange={(e) => updateSession(idx, 'approachStrategy', e.target.value)} 
+                                                 className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white font-mono"
+                                               />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                               <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">LEGENDA / COPY COMPLETA</label>
+                                               <textarea 
+                                                 rows={4}
+                                                 value={s.caption} 
+                                                 onChange={(e) => updateSession(idx, 'caption', e.target.value)} 
+                                                 className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white font-sans leading-relaxed"
+                                               />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                               <label className="text-[8px] font-black text-gray-400 uppercase tracking-wider">SUGESTÕES DE STORIES (UMA POR LINHA)</label>
+                                               <textarea 
+                                                 rows={3}
+                                                 value={Array.isArray(s.storySuggestions) ? s.storySuggestions.join('\n') : ''} 
+                                                 onChange={(e) => updateSession(idx, 'storySuggestions', e.target.value.split('\n'))} 
+                                                 placeholder="Story 01&#10;Story 02&#10;Story 03"
+                                                 className="w-full p-3 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-black dark:text-white font-mono"
+                                               />
+                                            </div>
+
+                                            <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex justify-end">
+                                               {doc.sessions.length > 1 && (
+                                                 <button 
+                                                   type="button"
+                                                   onClick={() => removeSession(idx)} 
+                                                   className="text-[9px] font-bold text-red-500 hover:text-red-700 tracking-widest uppercase transition-colors"
+                                                 >
+                                                    EXCLUIR SESSÃO
+                                                 </button>
+                                               )}
+                                            </div>
+                                         </div>
+                                       )}
+                                  </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Observações Gerais */}
+                        <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-white/10">
+                            <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 dark:text-white/40">OBSERVAÇÕES & NOTAS EDITORIAIS</label>
+                            <textarea 
+                              rows={3}
+                              value={doc.observation || ''} 
+                              onChange={(e) => updateDoc('observation', e.target.value)} 
+                              placeholder="Notas finais para o designer ou cliente..."
+                              className="w-full p-4 text-xs border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 dark:text-white outline-none" 
+                            />
                         </div>
                      </div>
                  )}
@@ -661,7 +902,175 @@ const CreateProject: React.FC = () => {
             </div>
           )}
           
-          {(step === 'entrada-guiada' || step === 'entrada-livre' || step === 'entrada-texto') && (
+          {step === 'entrada-guiada' && (
+            <div className="p-8 sm:p-10 space-y-8 animate-in slide-in-from-left duration-500 pb-20 overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <button onClick={() => setStep('inicio')} className="text-[10px] font-black uppercase text-gray-400 hover:text-black dark:hover:text-white flex items-center gap-2 tracking-widest">
+                  ← VOLTAR AOS FLUXOS
+                </button>
+                <span className="text-[8px] font-black text-gray-300 dark:text-white/30 tracking-[0.3em] uppercase">
+                  ENGENHARIA DE PROMPT AUTOMÁTICA
+                </span>
+              </div>
+
+              <div className="space-y-2 border-b border-gray-100 dark:border-white/10 pb-6">
+                <h2 className="serif text-3xl italic font-light text-black dark:text-white">
+                  Formulário Estratégico.
+                </h2>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-white/40 uppercase tracking-[0.2em]">
+                  Responda aos pilares da marca ou clique nos atalhos para preencher em segundos.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {/* NICHO */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                      NICHO DE ATUAÇÃO *
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    value={guidedForm.nicho}
+                    onChange={(e) => setGuidedForm({ ...guidedForm, nicho: e.target.value })}
+                    placeholder="Ex: Arquitetura de Luxo, E-commerce B2B, Dermatologia..."
+                    className="w-full p-4 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                  />
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {["Arquitetura Luxo", "Dermatologia Estética", "E-commerce B2B", "Mentoria & Cursos"].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setGuidedForm({ ...guidedForm, nicho: chip })}
+                        className="text-[8px] font-bold uppercase tracking-wider px-2.5 py-1 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
+                      >
+                        + {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* PÚBLICO ALVO */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                    PÚBLICO-ALVO & DEMOGRAFIA *
+                  </label>
+                  <input
+                    type="text"
+                    value={guidedForm.publico}
+                    onChange={(e) => setGuidedForm({ ...guidedForm, publico: e.target.value })}
+                    placeholder="Ex: Empresários de 30 a 50 anos, mulheres buscando estética natural..."
+                    className="w-full p-4 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                  />
+                </div>
+
+                {/* OBJETIVO ESTRATÉGICO */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                    OBJETIVO ESTRATÉGICO DA SEMANA *
+                  </label>
+                  <input
+                    type="text"
+                    value={guidedForm.objetivo}
+                    onChange={(e) => setGuidedForm({ ...guidedForm, objetivo: e.target.value })}
+                    placeholder="Ex: Agendar consultas, vender mentoria, ganhar autoridade..."
+                    className="w-full p-4 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                  />
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {["Vender Consultoria", "Ganhar Autoridade", "Gerar Leads Qualificados", "Lançamento Mastermind"].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setGuidedForm({ ...guidedForm, objetivo: chip })}
+                        className="text-[8px] font-bold uppercase tracking-wider px-2.5 py-1 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
+                      >
+                        + {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* DORES E DESEJOS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                      DORES PRINCIPAIS DO PÚBLICO
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={guidedForm.dores}
+                      onChange={(e) => setGuidedForm({ ...guidedForm, dores: e.target.value })}
+                      placeholder="Ex: Medo de resultados artificiais, falta de tempo para gestão..."
+                      className="w-full p-3 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                      DESEJOS INCONSCIENTES & ASPIRAÇÕES
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={guidedForm.desejos}
+                      onChange={(e) => setGuidedForm({ ...guidedForm, desejos: e.target.value })}
+                      placeholder="Ex: Status social, paz mental, rejuvenescimento discreto..."
+                      className="w-full p-3 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                    />
+                  </div>
+                </div>
+
+                {/* TOM DE VOZ & DIFERENCIAL */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                    TOM DE VOZ & ESTÉTICA DA MARCA
+                  </label>
+                  <input
+                    type="text"
+                    value={guidedForm.tomVoz}
+                    onChange={(e) => setGuidedForm({ ...guidedForm, tomVoz: e.target.value })}
+                    placeholder="Ex: Sofisticado, provocativo, minimalista, técnico..."
+                    className="w-full p-4 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                  />
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {["Sofisticado & Minimalista", "Provocativo & Direto", "Educativo & Técnico", "Acolhedor & Humano"].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setGuidedForm({ ...guidedForm, tomVoz: chip })}
+                        className="text-[8px] font-bold uppercase tracking-wider px-2.5 py-1 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
+                      >
+                        + {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-white/40 tracking-[0.3em] uppercase">
+                    DIFERENCIAL OU PRODUTO EM DESTAQUE (OPCIONAL)
+                  </label>
+                  <input
+                    type="text"
+                    value={guidedForm.diferencial}
+                    onChange={(e) => setGuidedForm({ ...guidedForm, diferencial: e.target.value })}
+                    placeholder="Ex: Protocolo exclusivo Ultraformer III, Método Autoral..."
+                    className="w-full p-4 text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleGenerateGuided}
+                disabled={loading || !guidedForm.nicho.trim() || !guidedForm.objetivo.trim()}
+                className="w-full py-6 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.3em] text-xs shadow-2xl disabled:opacity-30 transition-all hover:bg-gray-900 dark:hover:bg-gray-200"
+              >
+                {loading ? 'ARQUITETANDO COM IA...' : 'ARQUITETAR PLANO ESTRATÉGICO ✨'}
+              </button>
+            </div>
+          )}
+
+          {(step === 'entrada-livre' || step === 'entrada-texto') && (
             <div className="p-10 space-y-10 animate-in slide-in-from-left duration-500 pb-20">
                 <button onClick={() => setStep('inicio')} className="text-[10px] font-black uppercase text-gray-400 hover:text-black dark:hover:text-white flex items-center gap-2 tracking-widest">← VOLTAR</button>
                 <textarea 
@@ -677,11 +1086,48 @@ const CreateProject: React.FC = () => {
           )}
         </aside>
 
+        {/* Barra de Redimensionamento e Ocultação entre o Formulário e a Preview */}
+        {!isPanelCollapsed && (
+          <div
+            onMouseDown={handleMouseDownResize}
+            className={`no-print group relative w-3.5 hover:w-5 bg-gray-100/50 dark:bg-white/[0.02] hover:bg-black/10 dark:hover:bg-white/10 border-r border-gray-200 dark:border-white/10 cursor-col-resize flex flex-col items-center justify-center transition-all z-30 select-none ${
+              isResizing ? 'bg-black/20 dark:bg-white/20 w-5' : ''
+            }`}
+            title="Arraste para redimensionar a largura do formulário"
+          >
+            <div className="w-1 h-10 rounded-full bg-gray-300 dark:bg-white/20 group-hover:bg-black dark:group-hover:bg-white transition-colors mb-4" />
+            
+            {/* Botão para Ocultar Painel */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPanelCollapsed(true);
+              }}
+              className="w-6 h-6 rounded-full bg-white dark:bg-elite-gray border border-gray-200 dark:border-white/20 shadow-md flex items-center justify-center text-gray-500 hover:text-black dark:text-white/70 dark:hover:text-white transition-all transform hover:scale-110"
+              title="Ocultar Painel do Formulário"
+            >
+              <PanelLeftClose size={13} />
+            </button>
+          </div>
+        )}
+
         {/* Preview Area */}
         <section className="flex-1 bg-[#f0f0f0] dark:bg-elite-black overflow-y-auto p-12 transition-colors duration-500 relative scroll-smooth">
             {/* Header Flutuante de Projeto */}
             <div className="sticky top-0 -mt-12 -mx-12 mb-8 p-6 z-30 bg-[#f0f0f0]/95 dark:bg-elite-black/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 shadow-sm flex flex-wrap justify-between items-center gap-4">
                 <div className="flex items-center gap-4 min-w-0">
+                    {/* Botão de Expandir Painel quando estiver Oculto */}
+                    {isPanelCollapsed && (
+                      <button
+                        onClick={() => setIsPanelCollapsed(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black text-[9px] font-black tracking-[0.3em] uppercase transition-all shadow-md hover:opacity-80 shrink-0"
+                        title="Expandir Formulário"
+                      >
+                        <PanelLeftOpen size={14} />
+                        <span>EXIBIR FORMULÁRIO</span>
+                      </button>
+                    )}
                     <span className="text-[9px] font-black text-black/40 dark:text-white/40 tracking-[0.4em] uppercase shrink-0">PROJETO ATIVO</span>
                     {doc && <h3 className="serif text-lg italic text-black dark:text-white font-medium truncate max-w-xs md:max-w-md">{doc.title}</h3>}
                 </div>
@@ -741,7 +1187,15 @@ const CreateProject: React.FC = () => {
         </section>
       </main>
 
-
+      <ConfirmDialog
+        isOpen={deleteConfirmState.isOpen}
+        onClose={() => setDeleteConfirmState({ isOpen: false, projectId: null, projectName: '' })}
+        onConfirm={handleConfirmDeleteProject}
+        title="EXCLUIR MANUSCRITO"
+        confirmationQuestion={`Tem certeza que deseja excluir o manuscrito "${deleteConfirmState.projectName}"?`}
+        confirmTitle="Manuscrito Excluído"
+        confirmMsg="O projeto foi removido permanentemente da sua biblioteca."
+      />
 
       {error && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-red-100 text-red-600 px-8 py-4 border border-red-200 text-[10px] font-bold uppercase tracking-widest z-[100] shadow-2xl">

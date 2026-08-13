@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Copy, Edit2, Trash2 } from 'lucide-react';
 import { RoleModal } from './RoleModal';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface Role {
   id: string;
@@ -31,6 +32,7 @@ export const RolesManagement: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
 
   // Edit User Role State
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
@@ -103,16 +105,18 @@ export const RolesManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteRole = async (role: Role) => {
+  const handleDeleteRole = (role: Role) => {
     if (role.isSystem) {
       alert('Perfis do sistema não podem ser excluídos.');
       return;
     }
+    setRoleToDelete(role);
+  };
 
-    if (!confirm(`Tem certeza que deseja excluir o perfil "${role.name}"?`)) return;
-
+  const confirmDeleteRole = async () => {
+    if (!roleToDelete) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/admin/roles/${role.id}`, {
+      const res = await fetch(`http://localhost:3001/api/admin/roles/${roleToDelete.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -341,6 +345,17 @@ export const RolesManagement: React.FC = () => {
           onSave={handleSaveRole}
           roleToEdit={roleToEdit}
           availablePermissions={availablePermissions}
+        />
+
+        {/* Delete Confirm Dialog */}
+        <ConfirmDialog
+          isOpen={!!roleToDelete}
+          onClose={() => setRoleToDelete(null)}
+          onConfirm={confirmDeleteRole}
+          title="EXCLUIR PERFIL DE ACESSO"
+          confirmationQuestion={`Tem certeza que deseja excluir o perfil "${roleToDelete?.name}"?`}
+          confirmTitle="Perfil Excluído"
+          confirmMsg="O perfil de acesso foi removido do sistema."
         />
       </div>
     </div>

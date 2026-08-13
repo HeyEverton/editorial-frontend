@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import ThemeToggle from './ThemeToggle';
+import ThemeToggle, { ThemeMode } from './ThemeToggle';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -8,8 +8,9 @@ interface MainLayoutProps {
   setActiveScreen: (screen: string) => void;
   onLogout: () => void;
   userName?: string;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
   isDarkMode: boolean;
-  setIsDarkMode: (isDark: boolean) => void;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
@@ -18,8 +19,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   setActiveScreen, 
   onLogout,
   userName,
-  isDarkMode,
-  setIsDarkMode
+  themeMode,
+  setThemeMode,
+  isDarkMode
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -86,7 +88,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             </div>
 
             <div className="ml-auto flex items-center gap-4">
-              <ThemeToggle isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+              <ThemeToggle themeMode={themeMode} setThemeMode={setThemeMode} isDarkMode={isDarkMode} />
             </div>
         </header>
 

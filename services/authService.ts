@@ -46,10 +46,27 @@ export function isAuthenticated(): boolean {
 
 // Interface de usuário
 export interface User {
-    id: number;
+    id: string | number;
     email: string;
     nome?: string;
+    phone?: string;
+    cpf?: string;
     tokens: number;
+    role?: string;
+    roleId?: string;
+    isSystemAdmin?: boolean;
+    plan?: {
+        id: string;
+        name: string;
+        slug: string;
+        maxGenerationsPerMonth?: number;
+        maxProjects?: number;
+        hasA3Export?: boolean;
+        hasWhiteLabel?: boolean;
+    } | null;
+    billingCycle?: string;
+    generationsThisMonth?: number;
+    totalProjects?: number;
 }
 
 export interface AuthResponse {
@@ -116,6 +133,22 @@ export async function getCurrentUser(): Promise<User | null> {
         return user;
     } catch (error) {
         return null;
+    }
+}
+
+// Atualizar perfil do usuário
+export async function updateUserProfile(data: {
+    nome?: string;
+    email?: string;
+    phone?: string;
+    cpf?: string;
+    senha?: string;
+}): Promise<{ message: string; user: User }> {
+    try {
+        const response = await api.put<{ message: string; user: User }>('/auth/profile', data);
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data || { message: 'Erro ao atualizar perfil' };
     }
 }
 

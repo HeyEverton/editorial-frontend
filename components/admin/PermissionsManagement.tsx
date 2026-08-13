@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, AlertTriangle } from 'lucide-react';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface PermissionItem {
   id: string;
@@ -13,6 +14,7 @@ export const PermissionsManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [permToEdit, setPermToEdit] = useState<PermissionItem | null>(null);
+  const [permToDelete, setPermToDelete] = useState<PermissionItem | null>(null);
 
   // Form State
   const [pageName, setPageName] = useState('');
@@ -114,11 +116,14 @@ export const PermissionsManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (perm: PermissionItem) => {
-    if (!confirm(`Deseja excluir a permissão "${perm.name}"?`)) return;
+  const handleDelete = (perm: PermissionItem) => {
+    setPermToDelete(perm);
+  };
 
+  const confirmDeletePermission = async () => {
+    if (!permToDelete) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/admin/permissions/${perm.id}`, {
+      const res = await fetch(`http://localhost:3001/api/admin/permissions/${permToDelete.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -343,6 +348,17 @@ export const PermissionsManagement: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Confirm Delete Dialog */}
+        <ConfirmDialog
+          isOpen={!!permToDelete}
+          onClose={() => setPermToDelete(null)}
+          onConfirm={confirmDeletePermission}
+          title="EXCLUIR PERMISSÃO DO SISTEMA"
+          confirmationQuestion={`Tem certeza que deseja excluir a permissão "${permToDelete?.name}"?`}
+          confirmTitle="Permissão Excluída"
+          confirmMsg="A permissão foi removida do sistema com sucesso."
+        />
       </div>
     </div>
   );

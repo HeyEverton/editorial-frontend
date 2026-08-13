@@ -2,6 +2,50 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardStats, getProjects, Project, DashboardStats } from '../services/projectService';
 import { getCurrentUser, User } from '../services/authService';
+import { RotateCw } from 'lucide-react';
+
+const CURATOR_NOTES_PACKS = [
+  {
+    quote: `"A simplicidade é o último grau da sofisticação. Sua biblioteca editorial reflete uma disciplina visual impecável neste mês."`,
+    layoutTip: `Experimente usar a fonte Newsreader ou Playfair italic em seus títulos para um toque mais artesanal.`,
+    monthlyTrend: `Uso de espaços negativos aumentou 15% em seus projetos recentes, melhorando a legibilidade.`
+  },
+  {
+    quote: `"O bom design é invisível. Ele não chama atenção para a ferramenta, mas para a elegância da ideia."`,
+    layoutTip: `Combine títulos serifados com copy em fonte Inter ou Syne para um ar de revista editorial europeia.`,
+    monthlyTrend: `Carrosséis com menos de 5 slides e altíssima densidade de valor tiveram 32% mais salvamentos.`
+  },
+  {
+    quote: `"A autoridade de uma marca de luxo não se grita; ela se manifesta na clareza do espaço em branco e na precisão das palavras."`,
+    layoutTip: `Utilize contraste monocromático com fundo Preto Absoluto ou Areia do Deserto para transmitir exclusividade.`,
+    monthlyTrend: `Reels com gancho de 3 segundos em caixa-alta aumentaram a retenção do espectador.`
+  },
+  {
+    quote: `"Edição não é sobre o que adicionar, mas sobre ter a coragem de remover até revelar o essencial."`,
+    layoutTip: `Mantenha os parágrafos de legenda com no máximo 3 linhas por bloco para facilitar a leitura no mobile.`,
+    monthlyTrend: `Conteúdos com direção criativa minimalista registram 40% mais respostas em caixas de Stories.`
+  },
+  {
+    quote: `"Um layout harmonioso orienta os olhos do leitor com a mesma precisão de uma composição musical."`,
+    layoutTip: `Alterne entre presets 'Preto Absoluto' e 'Clássico Branco' conforme a intenção estratégica da semana.`,
+    monthlyTrend: `Narrativas de bastidores sensoriais geraram 25% mais conversão em consultorias de alto ticket.`
+  },
+  {
+    quote: `"Identidade visual marcante é a constância do refinamento aplicada a cada detalhe do manuscrito."`,
+    layoutTip: `Experimente alinhamento à esquerda em títulos A2 para passar mais modernidade e fluidez visual.`,
+    monthlyTrend: `Uso de perguntas de desejo inconsciente no segundo slide aumentou a taxa de deslize em carrosséis.`
+  },
+  {
+    quote: `"No mercado premium, o silêncio visual comunica mais poder do que o excesso de elementos decorativos."`,
+    layoutTip: `Aplique margens amplas e espaçamento generoso entre as sessões para destacar os ganchos magnéticos.`,
+    monthlyTrend: `Direção de arte inspirada em publicações de luxo tem liderado a conversão de clientes high-ticket.`
+  },
+  {
+    quote: `"A consistência estratégica transforma uma simples grade de conteúdo em um acervo de reputação inabalável."`,
+    layoutTip: `Adicione notas editoriais no final do documento para alinhar a direção de fotografia com seu designer.`,
+    monthlyTrend: `Projetos que alinham psicologia do espectador com Reels curtos registram 2x mais engajamento.`
+  }
+];
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -9,6 +53,21 @@ const Home: React.FC = () => {
     const [recentProjects, setRecentProjects] = useState<Project[]>([]);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const [curatorNote, setCuratorNote] = useState(() => {
+        const randomIndex = Math.floor(Math.random() * CURATOR_NOTES_PACKS.length);
+        return CURATOR_NOTES_PACKS[randomIndex];
+    });
+
+    const rotateCuratorNote = () => {
+        setCuratorNote(prev => {
+            let nextIndex = Math.floor(Math.random() * CURATOR_NOTES_PACKS.length);
+            while (CURATOR_NOTES_PACKS[nextIndex].quote === prev.quote) {
+                nextIndex = Math.floor(Math.random() * CURATOR_NOTES_PACKS.length);
+            }
+            return CURATOR_NOTES_PACKS[nextIndex];
+        });
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -177,10 +236,19 @@ const Home: React.FC = () => {
                     {/* Notas do Curador */}
                     <div className="p-10 bg-gray-50 dark:bg-elite-gray border border-gray-100 dark:border-white/5 space-y-10 flex flex-col justify-between">
                         <div className="space-y-10">
-                            <span className="text-[8px] font-black tracking-[0.5em] text-black/30 dark:text-white/20 uppercase">NOTAS DO CURADOR</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[8px] font-black tracking-[0.5em] text-black/30 dark:text-white/20 uppercase">NOTAS DO CURADOR</span>
+                                <button 
+                                    onClick={rotateCuratorNote} 
+                                    className="p-1.5 text-gray-400 hover:text-black dark:hover:text-white transition-all transform hover:rotate-180 duration-500 rounded-full hover:bg-gray-200/50 dark:hover:bg-white/10"
+                                    title="Alternar Nota do Curador"
+                                >
+                                    <RotateCw size={13} />
+                                </button>
+                            </div>
                             <div className="space-y-6">
-                                <p className="serif text-xl italic text-black dark:text-white leading-relaxed opacity-80">
-                                    "A simplicidade é o último grau da sofisticação. Sua biblioteca editorial reflete uma disciplina visual impecável neste mês."
+                                <p className="serif text-xl italic text-black dark:text-white leading-relaxed opacity-90 transition-opacity duration-300">
+                                    {curatorNote.quote}
                                 </p>
                             </div>
                             
@@ -188,13 +256,13 @@ const Home: React.FC = () => {
                                 <div className="flex gap-4 items-start">
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-bold text-black dark:text-white">Dica de Layout</p>
-                                        <p className="text-[9px] text-gray-400 leading-relaxed uppercase tracking-wider">Experimente usar a fonte Newsreader italic em seus títulos para um toque mais artesanal.</p>
+                                        <p className="text-[9px] text-gray-400 leading-relaxed uppercase tracking-wider">{curatorNote.layoutTip}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 items-start">
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-bold text-black dark:text-white">Tendência Mensal</p>
-                                        <p className="text-[9px] text-gray-400 leading-relaxed uppercase tracking-wider">Uso de espaços negativos aumentou 15% em seus projetos recentes, melhorando a legibilidade.</p>
+                                        <p className="text-[9px] text-gray-400 leading-relaxed uppercase tracking-wider">{curatorNote.monthlyTrend}</p>
                                     </div>
                                 </div>
                             </div>
