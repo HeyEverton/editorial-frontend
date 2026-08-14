@@ -187,14 +187,14 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
               }}
             />
           )}
-          <h1 className={`${currentStyle.heading} text-5xl md:text-7xl mb-4 leading-tight font-bold`} style={{ color: settings.colorTitle }}>
+          <h1 className={`${currentStyle.heading} text-3xl md:text-5xl lg:text-6xl mb-4 leading-tight font-bold break-words max-w-full`} style={{ color: settings.colorTitle }}>
             {doc.title}
           </h1>
-          <p className={`text-xl font-light mb-12 tracking-wide uppercase italic opacity-80`} style={{ color: settings.colorText }}>
+          <p className={`text-lg md:text-xl font-light mb-12 tracking-wide uppercase italic opacity-80 break-words max-w-full`} style={{ color: settings.colorText }}>
             {doc.subtitle}
           </p>
           {currentStyle.decoration && <div className="h-px w-24 mb-6" style={{ backgroundColor: settings.colorTitle }}></div>}
-          <p className={`text-sm tracking-[0.3em] font-bold uppercase`} style={{ color: settings.colorTitle }}>
+          <p className={`text-xs md:text-sm tracking-[0.3em] font-bold uppercase break-words max-w-full`} style={{ color: settings.colorTitle }}>
             {doc.positionPhrase}
           </p>
         </header>
@@ -207,9 +207,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {['Atmosfera', 'Foco de Dor', 'Autoridade'].map((key, i) => (
-              <div key={i} className={`${currentStyle.cardPadding} border`} style={{ backgroundColor: settings.colorCard, borderColor: cardBorderColor, color: settings.colorCardText }}>
+              <div key={i} className={`${currentStyle.cardPadding} border break-words overflow-hidden`} style={{ backgroundColor: settings.colorCard, borderColor: cardBorderColor, color: settings.colorCardText }}>
                 <span className={`text-[9px] uppercase tracking-widest block mb-3 font-bold`} style={{ color: settings.colorTitle }}>{key}</span>
-                <p className="text-base font-medium leading-relaxed">
+                <p className="text-base font-medium leading-relaxed break-words">
                   {i === 0 ? doc.architecture.feeling : i === 1 ? doc.architecture.pain : doc.architecture.authority}
                 </p>
               </div>
@@ -240,7 +240,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
               )}
 
               <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4 relative z-10">
-                <h3 className={`${currentStyle.heading} text-5xl font-bold`} style={{ color: settings.colorTitle }}>
+                <h3 className={`${currentStyle.heading} text-3xl md:text-5xl font-bold break-words`} style={{ color: settings.colorTitle }}>
                   {settings.sessionLabelType.toUpperCase()} {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                 </h3>
                 <div className="flex gap-4 items-center">
@@ -256,21 +256,21 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
                   <div className="space-y-8">
                     <div>
                       <p className={`text-[10px] font-bold uppercase tracking-widest mb-2`} style={{ color: settings.colorTitle }}>Tema Principal</p>
-                      <p className="text-sm font-bold leading-relaxed">{sessionPlan.theme}</p>
+                      <p className="text-sm font-bold leading-relaxed break-words">{sessionPlan.theme}</p>
                     </div>
-                    <div className={`p-6 border-l-4`} style={{ backgroundColor: settings.colorCard, color: settings.colorCardText, borderColor: settings.colorCardAccent }}>
+                    <div className={`p-6 border-l-4 break-words`} style={{ backgroundColor: settings.colorCard, color: settings.colorCardText, borderColor: settings.colorCardAccent }}>
                       <p className={`text-[9px] font-bold uppercase tracking-widest mb-2`} style={{ color: settings.colorTitle }}>Briefing Criativo</p>
-                      <p className={`text-[11px] font-medium leading-relaxed opacity-80`}>{sessionPlan.creativeDirection}</p>
+                      <p className={`text-[11px] font-medium leading-relaxed opacity-80 break-words`}>{sessionPlan.creativeDirection}</p>
                     </div>
                   </div>
 
-                  <div className={`p-8 shadow-2xl`} style={{ backgroundColor: settings.colorTitle, color: settings.colorBackground }}>
+                  <div className={`p-8 shadow-2xl break-words`} style={{ backgroundColor: settings.colorTitle, color: settings.colorBackground }}>
                     <p className={`text-[9px] font-bold uppercase tracking-[0.4em] mb-6 border-b pb-2`} style={{ borderColor: settings.colorBackground }}>
                       STORIES SUGERIDOS
                     </p>
                     <ul className="space-y-5">
                       {sessionPlan.storySuggestions.map((story, sIdx) => (
-                        <li key={sIdx} className={`text-[11px] leading-relaxed relative pl-4 border-l`} style={{ borderColor: settings.colorBackground }}>
+                        <li key={sIdx} className={`text-[11px] leading-relaxed relative pl-4 border-l break-words`} style={{ borderColor: settings.colorBackground }}>
                           {story}
                         </li>
                       ))}
@@ -282,15 +282,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
                 <div className="lg:col-span-8 space-y-12">
                   
                   {sessionPlan.reelsScript ? (
-                    <div className={`p-8 border-b-8 shadow-2xl`} style={{ backgroundColor: settings.colorCard, color: settings.colorCardText, borderColor: settings.colorTitle }}>
+                    <div className={`p-8 border-b-8 shadow-2xl break-words`} style={{ backgroundColor: settings.colorCard, color: settings.colorCardText, borderColor: settings.colorTitle }}>
                       <div className="flex justify-between items-center mb-10 border-b pb-4" style={{ borderColor: docBorderColor }}>
                         <p className="text-[10px] font-bold uppercase tracking-[0.4em]" style={{ color: settings.colorTitle }}>REELS SCRIPT</p>
                         <span className="text-[9px] font-mono opacity-50">ID: {idx+1}</span>
                       </div>
                       
-                      <div className="mb-10 p-6 border-l-4" style={{ backgroundColor: settings.colorBackground, borderColor: settings.colorTitle }}>
+                      <div className="mb-10 p-6 border-l-4 break-words" style={{ backgroundColor: settings.colorBackground, borderColor: settings.colorTitle }}>
                         <p className="text-[9px] uppercase font-bold mb-2 tracking-[0.2em] opacity-60">GANCHO (0-3s)</p>
-                        <p className={`${currentStyle.heading.includes('syne') ? 'syne' : 'serif'} text-2xl italic tracking-tighter`}>
+                        <p className={`${currentStyle.heading.includes('syne') ? 'syne' : 'serif'} text-xl md:text-2xl italic tracking-tight break-words`}>
                           "{sessionPlan.reelsScript.hook}"
                         </p>
                       </div>
@@ -304,11 +304,11 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                               <div className="space-y-4">
                                 <p className="text-[8px] uppercase font-bold opacity-60">AÇÃO VISUAL</p>
-                                <p className="text-[12px] leading-relaxed opacity-90">{scene.visualAction}</p>
+                                <p className="text-[12px] leading-relaxed opacity-90 break-words">{scene.visualAction}</p>
                               </div>
                               <div className="space-y-4">
                                 <p className="text-[8px] uppercase font-bold opacity-60">LOCUÇÃO</p>
-                                <p className="text-[12px] leading-relaxed italic font-semibold p-4 border" style={{ backgroundColor: settings.colorBackground, borderColor: docBorderColor, color: settings.colorText }}>
+                                <p className="text-[12px] leading-relaxed italic font-semibold p-4 border break-words" style={{ backgroundColor: settings.colorBackground, borderColor: docBorderColor, color: settings.colorText }}>
                                   {scene.audioSpeech}
                                 </p>
                               </div>
@@ -317,7 +317,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
                         ))}
                       </div>
                       <div className="mt-12 pt-8 border-t" style={{ borderColor: docBorderColor }}>
-                         <p className="text-xl font-bold uppercase tracking-tighter" style={{ color: settings.colorTitle }}>{sessionPlan.reelsScript.cta}</p>
+                         <p className="text-lg md:text-xl font-bold uppercase tracking-tight break-words" style={{ color: settings.colorTitle }}>{sessionPlan.reelsScript.cta}</p>
                       </div>
                     </div>
                   ) : sessionPlan.carouselSlides && sessionPlan.carouselSlides.length > 0 ? (
@@ -327,19 +327,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
                         <div className={`h-px flex-1 ${isBgDark ? 'bg-white/10' : 'bg-gray-100'}`}></div>
                       </div>
                       {sessionPlan.carouselSlides.map((slide) => (
-                        <div key={slide.slideNumber} className={`border shadow-sm hover:shadow-2xl transition-all page-break-avoid`} style={{ backgroundColor: settings.colorCard, borderColor: docBorderColor, color: settings.colorCardText }}>
+                        <div key={slide.slideNumber} className={`border shadow-sm hover:shadow-2xl transition-all page-break-avoid overflow-hidden`} style={{ backgroundColor: settings.colorCard, borderColor: docBorderColor, color: settings.colorCardText }}>
                           <div className="flex justify-between items-center p-5 opacity-90 border-b" style={{ backgroundColor: settings.colorBackground, color: settings.colorTitle }}>
                             <span className="text-[10px] font-bold">TELA {slide.slideNumber < 10 ? `0${slide.slideNumber}` : slide.slideNumber}</span>
                           </div>
-                          <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <div className="space-y-4">
+                          <div className="p-8 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
+                            <div className="space-y-4 flex flex-col justify-center">
                               <p className={`text-[10px] uppercase font-bold opacity-50`}>DESIGNER BRIEF</p>
-                              <p className="text-[13px] font-bold leading-relaxed">{slide.visualDescription}</p>
+                              <p className="text-[13px] font-bold leading-relaxed break-words">{slide.visualDescription}</p>
                             </div>
                             <div className="flex flex-col">
-                              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-white shadow-2xl min-h-[220px]" style={{ backgroundColor: settings.colorTitle, color: settings.colorBackground }}>
-                                 <p className={`${currentStyle.heading} text-2xl italic leading-none z-10 drop-shadow-xl`}>
-                                      {slide.textOnCard}
+                              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-white shadow-2xl min-h-[200px] overflow-hidden break-words max-w-full" style={{ backgroundColor: settings.colorTitle, color: settings.colorBackground }}>
+                                  <p className={`${currentStyle.heading} text-lg md:text-xl lg:text-2xl italic leading-snug z-10 drop-shadow-xl break-words max-w-full uppercase`}>
+                                       {slide.textOnCard}
                                   </p>
                               </div>
                             </div>
@@ -349,14 +349,14 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
                     </div>
                   ) : sessionPlan.staticPostInfo ? (
                     <div className={`border shadow-2xl page-break-avoid overflow-hidden border-t-8`} style={{ backgroundColor: settings.colorCard, borderColor: settings.colorTitle, color: settings.colorCardText }}>
-                      <div className="p-10 grid grid-cols-1 md:grid-cols-12 gap-12">
-                        <div className="md:col-span-5 space-y-6">
+                      <div className="p-8 md:p-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
+                        <div className="md:col-span-5 space-y-6 flex flex-col justify-center">
                            <p className={`text-[10px] uppercase font-bold opacity-50`}>VISUAL CONCEPT</p>
-                           <p className="text-[14px] font-bold leading-snug">{sessionPlan.staticPostInfo.visualComposition}</p>
+                           <p className="text-[13px] md:text-[14px] font-bold leading-snug break-words">{sessionPlan.staticPostInfo.visualComposition}</p>
                         </div>
-                        <div className="md:col-span-7">
-                          <div className="flex-1 p-20 flex flex-col items-center justify-center text-center shadow-2xl text-white relative min-h-[300px]" style={{ backgroundColor: settings.colorTitle, color: settings.colorBackground }}>
-                              <p className={`${currentStyle.heading} text-4xl italic leading-none z-10 drop-shadow-2xl`}>
+                        <div className="md:col-span-7 overflow-hidden">
+                          <div className="flex-1 p-8 md:p-12 flex flex-col items-center justify-center text-center shadow-2xl text-white relative min-h-[260px] overflow-hidden break-words max-w-full" style={{ backgroundColor: settings.colorTitle, color: settings.colorBackground }}>
+                              <p className={`${currentStyle.heading} text-xl md:text-2xl lg:text-3xl italic leading-snug z-10 drop-shadow-2xl break-words max-w-full uppercase`}>
                                   {sessionPlan.staticPostInfo.headlineOnCard}
                               </p>
                           </div>

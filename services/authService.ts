@@ -152,4 +152,20 @@ export async function updateUserProfile(data: {
     }
 }
 
+// Redefinir senha de acesso
+export async function resetPassword(email: string, novaSenha: string): Promise<{ message: string; token?: string }> {
+    try {
+        const response = await api.post<{ message: string; token?: string }>('/auth/reset-password', {
+            email,
+            novaSenha
+        });
+        if (response.data.token) {
+            setToken(response.data.token);
+        }
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data || { message: 'Erro ao redefinir a senha.' };
+    }
+}
+
 export default api;

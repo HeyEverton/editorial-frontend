@@ -124,6 +124,21 @@ const EliteApp: React.FC<{
   );
 };
 
+const AuthSyncEffect: React.FC<{
+  authenticated: boolean;
+  setAuthenticated: (val: boolean) => void;
+}> = ({ authenticated, setAuthenticated }) => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!authenticated && isAuthenticated()) {
+      setAuthenticated(true);
+    }
+  }, [location.pathname, authenticated, setAuthenticated]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [user, setUser] = useState<User | null>(null);
@@ -188,6 +203,7 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <AuthSyncEffect authenticated={authenticated} setAuthenticated={setAuthenticated} />
       <Routes>
         <Route path="/" element={<ArquiteturaEditorialV16 />} />
         <Route path="/checkout" element={<Checkout />} />

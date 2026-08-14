@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from 'react';
-import { login } from '../services/authService';
+import { login, resetPassword } from '../services/authService';
 import styles from './Login.module.css';
 
 interface LoginProps {
@@ -7,8 +7,10 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+    const [mode, setMode] = useState<'login' | 'reset'>('login');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const [novaSenha, setNovaSenha] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -18,28 +20,56 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setError('');
         setSuccess('');
 
-        // Validação básica
-        if (!email || !senha) {
-            setError('Por favor, preencha todos os campos.');
-            return;
-        }
+        if (mode === 'login') {
+            if (!email || !senha) {
+                setError('Por favor, preencha todos os campos.');
+                return;
+            }
 
-        setLoading(true);
+            setLoading(true);
 
-        try {
-            const response = await login(email, senha);
-            setSuccess(`Bem-vindo, ${response.user.nome || response.user.email}!`);
+            try {
+                const response = await login(email, senha);
+                setSuccess(`Bem-vindo, ${response.user.nome || response.user.email}!`);
 
-            // Callback de sucesso após breve delay para mostrar mensagem
-            setTimeout(() => {
-                if (onLoginSuccess) {
-                    onLoginSuccess();
-                }
-            }, 1000);
-        } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
-        } finally {
-            setLoading(false);
+                setTimeout(() => {
+                    if (onLoginSuccess) {
+                        onLoginSuccess();
+                    }
+                }, 1000);
+            } catch (err: any) {
+                setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            // Modo Redefinir / Criar Senha
+            if (!email || !novaSenha) {
+                setError('Por favor, informe seu e-mail e a nova senha.');
+                return;
+            }
+
+            if (novaSenha.length < 6) {
+                setError('A nova senha deve ter no mínimo 6 caracteres.');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await resetPassword(email, novaSenha);
+                setSuccess('Senha cadastrada com sucesso! Autenticando...');
+
+                setTimeout(() => {
+                    if (onLoginSuccess) {
+                        onLoginSuccess();
+                    }
+                }, 1200);
+            } catch (err: any) {
+                setError(err.message || 'Erro ao cadastrar senha. Verifique o e-mail informado.');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -48,7 +78,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <div className={styles.card}>
                 <div className={styles.header}>
                     <h1 className={styles.title}>Editorial Architect</h1>
-                    <p className={styles.subtitle}>ACCESS CONTROL V11.0</p>
+                    <p className={styles.subtitle}>
+                        {mode === 'login' ? 'ACCESS CONTROL V11.0' : 'CADASTRAR / REDEFINIR SENHA'}
+                    </p>
                 </div>
 
                 {error && <div className={styles.error}>{error}</div>}
@@ -57,7 +89,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.formGroup}>
                         <label className={styles.label} htmlFor="email">
-                            Identificação
+                            Identificação (E-mail da Assinatura)
                         </label>
                         <input
                             id="email"
@@ -72,30 +104,68 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         />
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.label} htmlFor="senha">
-                            Chave de Acesso
-                        </label>
-                        <input
-                            id="senha"
-                            type="password"
-                            className={styles.input}
-                            placeholder="••••••••"
-                            value={senha}
-                            onChange={(e) => setSenha(e.target.value)}
-                            disabled={loading}
-                            autoComplete="current-password"
-                        />
-                    </div>
+                    {mode === 'login' ? (
+                        <div className={styles.formGroup}>
+                            <label className={styles.label} htmlFor="senha">
+                                Chave de Acesso (Senha)
+                            </label>
+                            <input
+                                id="senha"
+                                type="password"
+                                className={styles.input}
+                                placeholder="••••••••"
+                                value={senha}
+                                onChange={(e) => setSenha(e.target.value)}
+                                disabled={loading}
+                                autoComplete="current-password"
+                            />
+                        </div>
+                    ) : (
+                        <div className={styles.formGroup}>
+                            <label className={styles.label} htmlFor="novaSenha">
+                                Criar Nova Senha de Acesso
+                            </label>
+                            <input
+                                id="novaSenha"
+                                type="password"
+                                className={styles.input}
+                                placeholder="Mínimo 6 caracteres"
+                                value={novaSenha}
+                                onChange={(e) => setNovaSenha(e.target.value)}
+                                disabled={loading}
+                                autoComplete="new-password"
+                            />
+                        </div>
+                    )}
 
                     <button
                         type="submit"
                         className={styles.button}
                         disabled={loading}
                     >
-                        {loading ? 'Entrando...' : 'Entrar'}
+                        {loading
+                            ? 'Processando...'
+                            : mode === 'login'
+                            ? 'Entrar'
+                            : 'Salvar Senha e Entrar'}
                     </button>
                 </form>
+
+                <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between text-[11px]">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setMode(mode === 'login' ? 'reset' : 'login');
+                            setError('');
+                            setSuccess('');
+                        }}
+                        className="text-gray-400 hover:text-white transition-colors underline"
+                    >
+                        {mode === 'login'
+                            ? 'Assinou e não tem senha? Criar/Redefinir Senha'
+                            : '← Voltar para a tela de Login'}
+                    </button>
+                </div>
 
                 <div className={styles.footer}>
                     Restricted Area • Authorized Personnel Only

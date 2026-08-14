@@ -18,9 +18,10 @@ import {
   AlertCircle,
   Loader2,
   ShieldCheck,
+  KeyRound,
 } from "lucide-react";
 import { getPlanById, BillingCycle } from "../plans";
-import { getCurrentUser, User } from "../services/authService";
+import { getCurrentUser, User, setToken, resetPassword } from "../services/authService";
 import { subscribePlan, getPaymentStatus } from "../services/paymentService";
 import { validateCPF, validateEmail, formatCPF, formatPhone } from "../utils/validators";
 
@@ -105,6 +106,11 @@ const Checkout: React.FC = () => {
   const [cvv, setCvv] = useState("");
   const [installments, setInstallments] = useState("1");
 
+  // Cadastro de Senha na Etapa 3 (Sucesso)
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   // Retorno da Cobrança Pix do Asaas
   const [paymentData, setPaymentData] = useState<{
     paymentId?: string;
@@ -158,7 +164,7 @@ const Checkout: React.FC = () => {
         } catch (error) {
           console.error("Erro no polling de status Pix:", error);
         }
-      }, 4000); // Polling a cada 4 segundos
+      }, 4000);
     }
 
     return () => {
@@ -170,7 +176,7 @@ const Checkout: React.FC = () => {
     return null;
   }
 
-  // Mascaramento e Formatação visual do Cartão de Crédito
+  // Formatação visual do Cartão de Crédito
   const getMaskedCardNumber = () => {
     const digits = cardNumber.replace(/\D/g, "");
     if (digits.length === 0) return "•••• •••• •••• 3492";
@@ -189,7 +195,6 @@ const Checkout: React.FC = () => {
     return cardName.toUpperCase();
   };
 
-  // Gerar opções de parcelamento
   const getInstallmentOptions = () => {
     const numericPrice = parseFloat(displayPrice.replace(".", "").replace(",", "."));
     if (isNaN(numericPrice) || numericPrice <= 0) {
@@ -213,7 +218,6 @@ const Checkout: React.FC = () => {
     return options;
   };
 
-  // Validação da Etapa 1 (Dados do Usuário)
   const validateStep1 = () => {
     const errors: { name?: string; email?: string; cpf?: string } = {};
 
@@ -237,7 +241,6 @@ const Checkout: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // Avançar da Etapa 1 para Etapa 2
   const handleProceedToStep2 = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -248,13 +251,12 @@ const Checkout: React.FC = () => {
 
     setStep(2);
 
-    // Se a aba padrão for Pix, gera a cobrança Pix imediatamente
     if (tab === "pix" && !paymentData) {
       generatePixCharge();
     }
   };
 
-  // Função para gerar a cobrança Pix no Asaas
+  // Gerar cobrança Pix e fazer auto-login se retornar token JWT
   const generatePixCharge = async () => {
     setLoading(true);
     setErrorMessage(null);
@@ -269,6 +271,11 @@ const Checkout: React.FC = () => {
         cpf: formData.cpf.replace(/\D/g, ""),
         phone: formData.phone.replace(/\D/g, ""),
       });
+
+      // Salva o token JWT de auto-login para acesso sem fricção
+      if (response.token) {
+        setToken(response.token);
+      }
 
       setPaymentData({
         paymentId: response.paymentId,
@@ -289,7 +296,6 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // Trocar de aba entre Pix e Cartão de Crédito
   const handleTabChange = (newTab: "pix" | "credit") => {
     setTab(newTab);
     setErrorMessage(null);
@@ -298,7 +304,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // Processar pagamento via Cartão de Crédito
+  // Processar Cartão de Crédito e realizar auto-login
   const handleCreditCardPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -361,12 +367,16 @@ const Checkout: React.FC = () => {
         },
       });
 
+      // Salva o token JWT para garantir entrada direta na plataforma
+      if (response.token) {
+        setToken(response.token);
+      }
+
       setPaymentData({
         paymentId: response.paymentId,
         subscriptionId: response.subscriptionId,
       });
 
-      // Transiciona para a tela de Sucesso se o pagamento/assinatura foi aprovado
       setStep(3);
     } catch (err: any) {
       console.error("Erro no pagamento por cartão:", err);
@@ -378,7 +388,27 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // Copiar chave Pix Copia e Cola
+  // Cadastrar/Definir Senha de Acesso na Etapa 3
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      setErrorMessage("A senha deve conter no mínimo 6 caracteres.");
+      return;
+    }
+
+    setSavingPassword(true);
+    setErrorMessage(null);
+
+    try {
+      await resetPassword(formData.email, newPassword);
+      setPasswordSuccess(true);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erro ao salvar a nova senha.");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const handleCopyPix = () => {
     if (paymentData?.pixQrCode?.payload) {
       navigator.clipboard.writeText(paymentData.pixQrCode.payload);
@@ -421,52 +451,90 @@ const Checkout: React.FC = () => {
         </header>
 
         <main className="flex-1 flex items-center justify-center p-8 z-10">
-          <div className="bg-white border border-gray-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-12 lg:p-16 max-w-xl w-full flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full border border-emerald-500/30 bg-emerald-50 flex items-center justify-center mb-8">
+          <div className="bg-white border border-gray-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-10 lg:p-14 max-w-xl w-full flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full border border-emerald-500/30 bg-emerald-50 flex items-center justify-center mb-6">
               <CheckCircle2 size={32} className="text-emerald-600" />
             </div>
 
-            <h1 className="font-serif text-3xl lg:text-4xl mb-4 text-black">
+            <h1 className="font-serif text-3xl lg:text-4xl mb-2 text-black">
               Pagamento Confirmado!
             </h1>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-sm mb-8">
+            <p className="text-gray-500 text-sm leading-relaxed max-w-sm mb-6">
               Sua assinatura do plano <strong>{plan.name}</strong> ({isAnual ? "Anual" : "Mensal"}) está <strong>ATIVA</strong>.
-              Seu acesso às ferramentas premium da Arquitetura Editorial foi liberado.
+              Você já está autenticado
             </p>
 
-            <div className="bg-gray-50 border border-gray-100 p-4 rounded-lg w-full mb-8 text-left text-xs text-gray-600 space-y-2">
+            <div className="bg-gray-50 border border-gray-100 p-4 rounded-lg w-full mb-6 text-left text-xs text-gray-600 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400 font-medium">Conta Registrada:</span>
+                <span className="font-bold text-black">{formData.email}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-gray-400 font-medium">Plano Contratado:</span>
                 <span className="font-bold text-black">{plan.name} ({isAnual ? "Anual" : "Mensal"})</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 font-medium">Método de Pagamento:</span>
-                <span className="font-bold text-black uppercase">{tab === "pix" ? "Pix Instantâneo" : "Cartão de Crédito"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400 font-medium">Status no Asaas:</span>
+                <span className="text-gray-400 font-medium">Status do Pagamento:</span>
                 <span className="font-bold text-emerald-600 uppercase">Confirmado</span>
               </div>
-              {paymentData?.paymentId && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400 font-medium">ID da Transação:</span>
-                  <span className="font-mono text-[11px] text-gray-700">{paymentData.paymentId}</span>
+            </div>
+
+            {/* Bloco para o usuário cadastrar/definir sua senha de acesso futuro */}
+            <div className="bg-white border border-gray-200 p-5 rounded-lg w-full mb-8 text-left shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <KeyRound size={16} className="text-black" />
+                <h4 className="font-bold text-xs uppercase tracking-wider text-black">
+                  Definir sua Senha de Acesso
+                </h4>
+              </div>
+              <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
+                Crie uma senha de acesso para entrar na sua conta (<strong>{formData.email}</strong>) em outros dispositivos.
+              </p>
+
+              {errorMessage && (
+                <div className="mb-3 text-[11px] text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                  {errorMessage}
                 </div>
+              )}
+
+              {passwordSuccess ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-3 rounded text-xs font-bold flex items-center gap-2">
+                  <Check size={16} /> Senha cadastrada com sucesso! Você pode usá-la no próximo login.
+                </div>
+              ) : (
+                <form onSubmit={handleSetPassword} className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="password"
+                    placeholder="Sua senha de acesso (mín. 6 caracteres)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="flex-1 bg-gray-50 border border-gray-300 rounded px-3 py-2 text-xs focus:outline-none focus:border-black text-gray-800"
+                  />
+                  <button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="bg-black text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider rounded hover:bg-gray-800 transition-colors shrink-0 disabled:opacity-50"
+                  >
+                    {savingPassword ? "Salvando..." : "Salvar Senha"}
+                  </button>
+                </form>
               )}
             </div>
 
-            <div className="flex gap-4 mb-8 w-full justify-center">
+            <div className="flex gap-4 mb-6 w-full justify-center">
               <button
-                onClick={() => navigate("/elite")}
-                className="bg-black text-white px-8 py-4 text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-gray-800 transition-colors w-full"
+                onClick={() => {
+                  window.location.href = "/elite";
+                }}
+                className="bg-black text-white px-8 py-4 text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-gray-800 transition-colors w-full flex items-center justify-center gap-2"
               >
-                Acessar o Painel Principal
+                Acessar o Painel Principal <ArrowRight size={14} />
               </button>
             </div>
 
-            <div className="w-full h-px bg-gray-100 mb-6" />
+            <div className="w-full h-px bg-gray-100 mb-4" />
             <p className="text-[9px] font-bold tracking-[0.2em] text-gray-400 uppercase">
-              ARQUITETURA EDITORIAL · ASSINATURA VERIFICADA
+              ARQUITETURA EDITORIAL · ACESSO LIBERADO AUTOMATICAMENTE
             </p>
           </div>
         </main>
@@ -742,7 +810,7 @@ const Checkout: React.FC = () => {
                     <span className="text-[11px] text-red-500 mt-1 block">{formErrors.cpf}</span>
                   ) : (
                     <span className="text-[10px] text-gray-400 mt-1 block">
-                      Obrigatório pelo Banco Central e Asaas para emissão da cobrança.
+                      Obrigatório pelo Banco Central para a cobrança.
                     </span>
                   )}
                 </div>
@@ -802,7 +870,7 @@ const Checkout: React.FC = () => {
                       <div className="py-16 flex flex-col items-center text-center">
                         <Loader2 size={36} className="animate-spin text-black mb-4" />
                         <p className="text-xs font-bold uppercase tracking-wider text-gray-600">
-                          Gerando QR Code Pix no Asaas...
+                          Gerando QR Code Pix...
                         </p>
                       </div>
                     ) : (
@@ -812,7 +880,7 @@ const Checkout: React.FC = () => {
                           {paymentData?.pixQrCode?.encodedImage ? (
                             <img
                               src={`data:image/png;base64,${paymentData.pixQrCode.encodedImage}`}
-                              alt="QR Code Pix Asaas"
+                              alt="QR Code Pix"
                               className="w-full h-full object-contain"
                             />
                           ) : (

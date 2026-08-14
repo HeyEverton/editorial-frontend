@@ -417,13 +417,17 @@ const CreateProject: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
 
       const opt = {
-        margin: 0,
+        margin: [10, 10, 10, 10], // Margem de segurança em milímetros
         filename: `${doc.title.toLowerCase().replace(/\s/g, '-')}-a2-elite.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
-          windowWidth: 1587, 
+          scrollX: 0,
+          scrollY: 0,
+          x: 0,
+          y: 0,
+          windowWidth: 1400, 
           letterRendering: true
         },
         jsPDF: { unit: 'mm', format: 'a2', orientation: 'portrait' },
@@ -626,7 +630,6 @@ const CreateProject: React.FC = () => {
                 {[
                     { id: 'entrada-guiada', label: 'FLUXO GUIADO', title: 'FORMULÁRIO ESTRATÉGICO', desc: 'Responda 5 perguntas e deixe a engenharia de prompt invisível agir.' },
                     { id: 'entrada-livre', label: 'FLUXO CRIATIVO', title: 'GERAR COM TEXTO LIVRE', desc: 'Explique sua ideia em um text solto e a IA arquiteta o plano.' },
-                    { id: 'entrada-texto', label: 'FLUXO TÉCNICO', title: 'FORMATAR MEU TEXTO', desc: 'Já tem o conteúdo? Organizamos ele no layout de agência elite.' }
                 ].map(flow => (
                     <button key={flow.id} onClick={() => setStep(flow.id as WorkflowStep)} className="group p-10 border border-gray-100 dark:border-white/5 text-left hover:border-black dark:hover:border-white/20 transition-all hover:shadow-2xl bg-gray-50/50 dark:bg-white/5">
                         <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-300 dark:text-white/30 group-hover:text-black dark:group-hover:text-white mb-6 block">{flow.label}</span>
@@ -1065,7 +1068,7 @@ const CreateProject: React.FC = () => {
                 disabled={loading || !guidedForm.nicho.trim() || !guidedForm.objetivo.trim()}
                 className="w-full py-6 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.3em] text-xs shadow-2xl disabled:opacity-30 transition-all hover:bg-gray-900 dark:hover:bg-gray-200"
               >
-                {loading ? 'ARQUITETANDO COM IA...' : 'ARQUITETAR PLANO ESTRATÉGICO ✨'}
+                {loading ? 'ARQUITETANDO COM IA...' : 'ARQUITETAR PLANO ESTRATÉGICO'}
               </button>
             </div>
           )}

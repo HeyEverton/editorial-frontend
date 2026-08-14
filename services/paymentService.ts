@@ -31,6 +31,8 @@ export interface SubscribeResponse {
     paymentId?: string;
     billingType: string;
     status: string;
+    token?: string;
+    user?: any;
     pixQrCode?: {
         encodedImage: string;
         payload: string;
