@@ -6,30 +6,12 @@ import process from 'node:process';
 import path from 'node:path';
 
 export default defineConfig(({ mode }) => {
-  // Carrega variáveis do .env e do ambiente de deploy
-  const env = loadEnv(mode, process.cwd(), '');
-  
-  /**
-   * NOTA PARA DEPLOY (Ex: Netlify, Vercel, Cloudflare Pages):
-   * Certifique-se de adicionar a variável de ambiente 'API_KEY' (ou 'VITE_GEMINI_API_KEY') 
-   * nas configurações do seu painel de controle de deploy. 
-   * O valor deve ser a sua chave da Gemini API obtida em ai.google.dev.
-   */
-  const apiKey = env.VITE_GEMINI_API_KEY || env.API_KEY || "";
-
   return {
     plugins: [react()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './'),
       },
-    },
-    define: {
-      'process.env.API_KEY': JSON.stringify(apiKey),
-      'process.env': {
-        NODE_ENV: JSON.stringify(mode),
-        API_KEY: JSON.stringify(apiKey)
-      }
     },
     server: {
       port: 3000

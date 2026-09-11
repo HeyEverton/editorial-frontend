@@ -70,8 +70,20 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ doc, settings: rawSet
     return textHex;
   };
 
+  const getSafeImageUrl = (url?: string): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed) || /^data:image\/(png|jpeg|jpg|webp|svg\+xml);base64,/i.test(trimmed)) {
+      return trimmed;
+    }
+    return null;
+  };
+
+  const safeWatermark = getSafeImageUrl(rawSettings.watermarkImage);
+
   const settings = {
     ...rawSettings,
+    watermarkImage: safeWatermark || undefined,
     colorText: getSafeColor(rawSettings.colorBackground, rawSettings.colorText),
     colorTitle: getSafeColor(rawSettings.colorBackground, rawSettings.colorTitle),
     colorCardText: getSafeColor(rawSettings.colorCard, rawSettings.colorCardText, rawSettings.colorBackground),
