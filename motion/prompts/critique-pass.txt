@@ -1,0 +1,14 @@
+Abra out/critique/<tag>_contact.png, _strip.png e _phone.png (ou _beats.png) e olhe de verdade.
+Seja um diretor de motion exigente, não um autor orgulhoso.
+
+Nota 1-10: gancho nos 2 primeiros segundos · leitura em tela de celular (360 px) · qualidade do
+movimento (molas, sem quadro morto) · variedade (algo novo a cada 2-4 s) · composição ·
+fidelidade à marca AE·Studio · sincronia do som.
+
+Liste os 3 maiores problemas com timestamp. Procure especificamente: texto sobreposto durante
+trocas, algo deslizando em vez de assentar com mola, rótulos de canto e molduras, plano de título
+centralizado em gradiente, texto borrado por escala, batida morta sem nada acontecendo,
+descendentes cortados por máscara, cursor fora da tela, UI que não existe no produto.
+
+Corrija, re-renderize só os segundos afetados (render.mjs --from A --to B), mostre o novo contact
+sheet e as novas notas.

@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AE·Studio — Anúncio</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="../lib/motion.js"></script>
+<script src="../lib/film.js"></script>
+<script src="../assets/layout.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  ANÚNCIO — 24s · 120 BPM (batida = 0.5s, compasso = 2s) · 9:16 / 1:1 / 16:9
+//  Roteiro em docs/shotlist_ad.md. Toda cena desenha contra o layout L, não pixels fixos.
+// ════════════════════════════════════════════════════════════════════
+const { clamp, lerp, inv, sp, spring, track, trackObj, indicator, rng, easeOut, easeInOut } = M;
+const { W, H, V, SQ, U, g, C, F, IMG, bg, gridTex, dotTex, text, measure, label, kinetic, wrap,
+        rrect, shadow, noShadow, screen, cursor, ripple, cursorAt, drawGrain } = FILM_RT;
+const DUR = 24, BPM = 120, B = 0.5;
+const HZ = !V && !SQ;
+
+// ── Layout por formato ──
+const L = (() => {
+  const pad = (V ? 84 : SQ ? 72 : 140) * U;
+  if (V) return { pad, hx: pad, hy: 330 * U, hs: 1, vis: { x: pad, y: 760 * U, w: W - pad * 2, h: H - 760 * U - 200 * U } };
+  if (SQ) return { pad, hx: pad, hy: 170 * U, hs: 0.72, vis: { x: W * 0.36, y: 300 * U, w: W * 0.64 - pad, h: H - 300 * U - pad } };
+  return { pad, hx: pad, hy: 400 * U, hs: 0.86, vis: { x: W * 0.47, y: 110 * U, w: W * 0.53 - pad * 0.8, h: H - 220 * U } };
+})();
+const HS = (n) => n * U * L.hs;   // tamanho de título adaptado ao formato
+
+// ── Recortes reais do documento A3 (px na imagem doc_*_full.png, largura 896) ──
+const DOC = {
+  head:     [0, 0, 896, 300],
+  cards:    [60, 340, 780, 300],
+  carousel: [330, 1050, 500, 1150],
+  slide1:   [590, 1150, 200, 220],
+  stories:  [70, 1330, 230, 260],
+  reels:    [330, 2760, 500, 540],
+  session:  [60, 880, 780, 200],
+};
+
+// ── Cues de som (lidos pelo audio.mjs) ──
+const CUES = [];
+const cue = (t, type, gain = 1) => CUES.push({ t: +t.toFixed(3), type, gain });
+
+// ════════ CENA 1 — Gancho: "Seu cliente não paga por lista." (0 – 3.2) ════════
+const LISTA = ['Post segunda — dica rápida', 'Reels terça — trend do momento', 'Story quarta — bastidor',
+  'Carrossel quinta — 5 erros', 'Post sexta — frase motivacional', 'Reels sábado — antes e depois',
+  'Story domingo — caixinha de perguntas', 'Post segunda — dica rápida'];
+[0, 0.5, 1.0, 1.5].forEach((t) => cue(t, 'impact', 0.8));
+cue(2.0, 'scratch'); cue(2.9, 'whoosh');
+function sceneHook(t) {
+  bg(C.ink);
+  gridTex(60 * U, C.lineInv, 0, -t * 30 * U);
+  // A "lista" genérica rolando ao fundo — sem graça de propósito
+  g.save();
+  const lh = (SQ ? 52 : 64) * U, x0 = V || SQ ? L.pad : W * 0.58;
+  for (let i = 0; i < 14; i++) {
+    const y = (V ? H * 0.62 : SQ ? H * 0.8 : 200 * U) + i * lh - t * 60 * U;
+    const a = 0.16 * clamp(t * 3 - i * 0.15);
+    text('—  ' + LISTA[i % LISTA.length], x0, y, { size: 30 * U, color: '#fff', alpha: a, fam: F.sans, weight: 300 });
+  }
+  g.restore();
+  // Título cinético, palavra a palavra na batida
+  const size = HS(V ? 150 : 200);
+  const y0 = V ? 420 * U : 330 * U;
+  const lines = [
+    { words: 'Seu cliente', size, weight: 900, color: '#fff' },
+    { words: 'não paga', size, weight: 900, color: '#fff' },
+    { words: 'por lista.', size, weight: 400, italic: true, color: '#fff' },
+  ];
+  // cada linha entra numa batida
+  let y = y0;
+  lines.forEach((ln, i) => { kinetic(t, [ln], L.hx, y, { t0: i * B * (i < 2 ? 1 : 1) + (i === 2 ? 0.5 : 0), t1: 2.75, stagger: 0.5 }); y += size * 1.04; });
+  // risco dourado sobre "lista."
+  const sw = measure('por lista.', { size, fam: F.serif, italic: true });
+  const pS = sp(t - 2.0, 'snappy'), pOut = clamp((t - 2.75) / 0.25);
+  if (pS > 0) {
+    g.save(); g.fillStyle = C.gold;
+    const ly = y0 + size * 1.04 * 2 - size * 0.3;
+    g.fillRect(L.hx - 10 * U + sw * pOut, ly, (sw + 20 * U) * pS * (1 - pOut), 12 * U); g.restore();
+  }
+}
+
+// ════════ CENA 2 — "Ele paga por arquitetura." (3.0 – 5.2) ════════
+cue(3.0, 'drop'); cue(3.5, 'pop', 0.6);
+function sceneArch(t) {
+  // painel de papel entra como uma lâmina (mola pesada), vindo de baixo
+  const p = sp(t, 'heavy');
+  g.save(); g.beginPath(); g.rect(0, H * (1 - p), W, H * p + 2); g.clip();
+  bg(C.paper); dotTex();
+  const size = HS(V ? 170 : 190);
+  const cy = V ? H * 0.42 : H * 0.5;
+  label('Ele paga por', L.hx, cy - size * 0.95, { size: 20 * U, color: C.muted, alpha: clamp((t - 0.25) * 5) });
+  kinetic(t, [{ words: 'arquitetura.', size, italic: true, weight: 400, color: C.ink }], L.hx, cy, { t0: 0.3, t1: 2.0 });
+  // marca AE (quadrado no quadrado) nasce no ponto final
+  const m = sp(t - 1.0, 'playful'), mo = clamp((t - 1.9) / 0.2);
+  const s = 44 * U * m * (1 - mo);
+  const mx = L.hx + measure('arquitetura.', { size, fam: F.serif, italic: true }) + 40 * U, my = cy - size * 0.25;
+  if (s > 0.5) {
+    g.save(); g.strokeStyle = C.ink; g.lineWidth = 3 * U; g.strokeRect(mx - s, my - s, s * 2, s * 2);
+    g.fillStyle = C.gold; g.fillRect(mx - s * 0.4, my - s * 0.4, s * 0.8, s * 0.8); g.restore();
+  }
+  g.restore();
+}
+
+// ════════ CENA 3 — Formulário real, 5 perguntas (5.0 – 9.2) ════════
+const FIELDS = ['nicho', 'publico', 'objetivo', 'dores', 'tom'];
+const PILLARS = ['Nicho', 'Público', 'Dores', 'Objetivo', 'Tom de Voz'];
+[5.5, 6.0, 6.5, 7.0, 7.5].forEach((t) => { cue(t, 'click'); cue(t + 0.04, 'tick', 0.5); });
+cue(8.25, 'click'); cue(8.3, 'impact', 0.6);
+function sceneForm(t, LAY) {
+  bg(C.paper); gridTex(40 * U, C.line);
+  // título
+  const size = HS(V ? 110 : 104);
+  const hy = V ? 250 * U : SQ ? 150 * U : 330 * U;
+  kinetic(t, [{ words: '5 perguntas.', size, weight: 700 }, { words: 'Zero prompt.', size, italic: true, color: C.muted }], L.hx, hy, { t0: 0.05, t1: 3.9 });
+  // pílulas dos pilares (como na landing) — acendem na batida
+  const py = V ? hy + size * 2.3 : SQ ? hy + size * 2.1 : hy + size * 2.4;
+  if (!SQ || true) {
+    let px = L.hx;
+    const maxX = V ? W - L.pad : HZ ? W * 0.43 : W * 0.33;
+    let row = 0;
+    PILLARS.forEach((pl, i) => {
+      const on = sp(t - 0.5 - i * B, 'snappy');
+      const pin = sp(t - 0.2 - i * 0.05, 'ui'), pout = clamp((t - 3.85) / 0.25);
+      const s = { size: 15 * U, fam: F.label, weight: 700, ls: 2.5 * U };
+      const w = measure((pl + ' ✓').toUpperCase(), s) + 36 * U;
+      if (px + w > maxX) { px = L.hx; row++; }
+      const y = py + row * 58 * U + (1 - pin) * 30 * U;
+      g.save(); g.globalAlpha = pin * (1 - pout);
+      g.fillStyle = on > 0.5 ? C.ink : 'rgba(0,0,0,0.04)'; g.fillRect(px, y, w, 44 * U);
+      g.strokeStyle = 'rgba(0,0,0,0.12)'; g.strokeRect(px + 0.5, y + 0.5, w - 1, 44 * U - 1);
+      text((pl + (on > 0.5 ? ' ✓' : '')).toUpperCase(), px + 18 * U, y + 28 * U, { ...s, color: on > 0.5 ? '#fff' : C.muted });
+      g.restore();
+      px += w + 10 * U;
+    });
+  }
+  // a tela real: painel do formulário (app_dark_form_*) — esquerda vazia, revela preenchido campo a campo
+  const lay = LAY.form;
+  const vis = V ? { x: L.pad, y: 830 * U, w: W - L.pad * 2, h: 900 * U } : L.vis;
+  const pin = sp(t - 0.15, 'ui'), pout = sp(t - 3.95, 'snappy');
+  const r = { x: vis.x, y: vis.y + (1 - pin) * 200 * U - pout * 60 * U, w: vis.w, h: vis.h };
+  // câmera: segue o campo ativo
+  // câmera lenta: três enquadramentos (movimento rápido + motion blur = texto duplicado)
+  const cw = V ? 560 : 620, at = (bx) => bx.y + bx.h / 2 + 60;
+  const keys = [[0, { cx: 528, cy: at(lay.publico), w: cw }], [1.2, { cx: 528, cy: at(lay.dores), w: cw }], [2.4, { cx: 528, cy: at(lay.gerar) - 140, w: cw }]];
+  const cam = trackObj(t, keys, 45, 13);
+  g.save(); g.globalAlpha = 1 - clamp((t - 3.95) / 0.25);
+  const map = screen(IMG.form_vazio, r, cam, { radius: 18 * U });
+  // revela os campos preenchidos (wipe da esquerda pra direita) a cada batida
+  const reveal = [lay.chipNicho && lay.nicho, lay.publico, lay.objetivo, lay.dores, lay.tom];
+  g.save(); rrect(r.x, r.y, r.w, r.h, 18 * U); g.clip();
+  const s = map.s, rh = r.h / s, sx = cam.cx - cam.w / 2, sy = cam.cy - rh / 2;
+  FIELDS.forEach((f, i) => {
+    const b = lay[f]; const p = easeOut(clamp((t - 0.5 - i * B) / 0.22));
+    if (p <= 0) return;
+    const bb = f === 'dores' ? { x: b.x, y: b.y, w: 400, h: b.h } : b;  // dores + desejos lado a lado
+    g.drawImage(IMG.form_cheio, bb.x, bb.y - 2, bb.w * p, bb.h + 4, map.x(bb.x), map.y(bb.y - 2), bb.w * p * s, (bb.h + 4) * s);
+  });
+  // botão "arquitetar": inverte no clique
+  const gb = lay.gerar, pc = clamp((t - 3.25) / 0.08);
+  if (pc > 0) { g.fillStyle = `rgba(184,146,90,${0.9 * pc})`; g.fillRect(map.x(gb.x), map.y(gb.y), gb.w * s, gb.h * s);
+    text('ARQUITETANDO COM IA...', map.x(gb.x + gb.w / 2), map.y(gb.y + gb.h / 2 + 5), { size: 12 * s, fam: F.sans, weight: 800, ls: 4 * s, color: '#000', align: 'center' }); }
+  g.restore();
+  // cursor: vai a cada chip/campo na batida e clica
+  const targets = [lay.chipNicho, lay.publico, lay.chipObjetivo, lay.dores, lay.chipTom, lay.gerar];
+  const ck = targets.map((b, i) => [i === 0 ? 0 : 0.2 + i * B - 0.35, { x: b.x + b.w * 0.5, y: b.y + b.h * 0.6 }]);
+  ck[5][0] = 2.9;
+  const clicks = [0.5, 1.0, 1.5, 2.0, 2.5, 3.25];
+  const cp = cursorAt(t, ck, clicks);
+  clicks.forEach((ct) => ripple(map.x(cp.x), map.y(cp.y), t - ct));
+  cursor(map.x(cp.x), map.y(cp.y), { press: cp.press, dark: true, alpha: clamp((t - 0.2) * 4) });
+  g.restore();
+}
+
+// ════════ CENA 4 — Gerando (9.0 – 11.2) ════════
+cue(9.0, 'riser'); cue(10.5, 'chime');
+function sceneGen(t) {
+  const p = sp(t, 'heavy');
+  g.save(); g.beginPath();
+  // íris circular saindo do botão
+  g.arc(W / 2, H / 2, Math.hypot(W, H) * 0.6 * p, 0, Math.PI * 2); g.clip();
+  bg(C.ink); gridTex(60 * U, C.lineInv);
+  const cx = W / 2, cy = H / 2;
+  // texto brilhante (ShinyText do produto) — brilho passa da esquerda para a direita
+  const msg = 'gerando arquitetura editorial...';
+  const size = HS(V ? 56 : 64);
+  g.save(); g.font = `italic 400 ${size}px ${F.serif}`; g.textAlign = 'center';
+  const mw = g.measureText(msg).width;
+  const sh = ((t * 0.9) % 1) * (mw + 400 * U) - 200 * U;
+  const grd = g.createLinearGradient(cx - mw / 2 + sh - 120 * U, 0, cx - mw / 2 + sh + 120 * U, 0);
+  grd.addColorStop(0, 'rgba(255,255,255,0.28)'); grd.addColorStop(0.5, '#fff'); grd.addColorStop(1, 'rgba(255,255,255,0.28)');
+  g.fillStyle = grd; g.globalAlpha = clamp(t * 4) * (1 - clamp((t - 1.9) / 0.2));
+  g.fillText(msg, cx, cy); g.restore();
+  // contadores sobem
+  const stats = [['4', 'sessões'], ['3', 'formatos'], ['1', 'estratégia']];
+  const gap = V ? 300 * U : 360 * U;
+  stats.forEach(([n, l], i) => {
+    const pp = sp(t - 0.5 - i * B * 0.5, 'playful'), po = clamp((t - 1.9) / 0.2);
+    const x = cx + (i - 1) * gap, y = cy + 170 * U + (1 - pp) * 40 * U;
+    g.save(); g.globalAlpha = clamp(pp) * (1 - po);
+    text(n, x, y, { size: HS(96), fam: F.serif, weight: 700, color: '#fff', align: 'center' });
+    label(l, x, y + 46 * U, { size: 15 * U, color: 'rgba(255,255,255,0.5)', align: 'center' });
+    g.restore();
+  });
+  // linha de progresso
+  g.fillStyle = C.gold; g.fillRect(cx - 300 * U, cy + 60 * U, 600 * U * easeInOut(clamp(t / 1.6)), 3 * U);
+  g.restore();
+}
+
+// ════════ CENA 5 — Documento real + troca de preset (11.0 – 15.2) ════════
+const PRESETS = [['standard', 'Standard'], ['classic_gold', 'Classic Gold'], ['dark_onyx', 'Dark Onyx'], ['minimal_sand', 'Minimal Sand']];
+[12.0, 13.0, 14.0].forEach((t) => { cue(t - 0.05, 'click'); cue(t, 'swoosh'); });
+cue(11.0, 'whoosh');
+function sceneDoc(t) {
+  bg(C.paper); dotTex();
+  const size = HS(V ? 100 : 96);
+  const hy = V ? 240 * U : SQ ? 130 * U : 380 * U;
+  kinetic(t, [{ words: 'Troque o preset.', size, weight: 700 }, { words: 'Mude a identidade.', size, italic: true, color: C.muted }], L.hx, hy, { t0: 0.1, t1: 3.9 });
+  // barra de presets com indicador que estica
+  const by = V ? hy + size * 1.75 : SQ ? hy + size * 1.7 : hy + size * 1.9;
+  const bw = V ? (W - L.pad * 2) / 4 : SQ ? 92 * U : 150 * U;
+  const active = t < 1 ? 0 : t < 2 ? 1 : t < 3 ? 2 : 3;
+  const pin = sp(t - 0.3, 'ui'), pout = clamp((t - 3.9) / 0.25);
+  g.save(); g.globalAlpha = pin * (1 - pout);
+  if (!SQ) {
+    const ind = indicator(t, [[0, 0], [1, bw], [2, bw * 2], [3, bw * 3]], bw);
+    g.fillStyle = C.ink; g.fillRect(L.hx + ind.left, by, ind.right - ind.left, 46 * U);
+    PRESETS.forEach(([k, n], i) => {
+      text(n.toUpperCase(), L.hx + i * bw + bw / 2, by + 29 * U, { size: 13 * U, fam: F.label, weight: 700, ls: 2 * U, align: 'center', color: i === active ? '#fff' : C.muted });
+    });
+    g.strokeStyle = 'rgba(0,0,0,0.12)'; g.strokeRect(L.hx + 0.5, by + 0.5, bw * 4, 46 * U);
+  }
+  g.restore();
+  // a página real — cada preset entra numa diagonal (mola ágil), a página rola devagar
+  const vis = V ? { x: L.pad + 40 * U, y: 700 * U, w: W - L.pad * 2 - 80 * U, h: 1060 * U } : L.vis;
+  const pIn = sp(t, 'heavy');
+  const r = { x: vis.x + (1 - pIn) * 120 * U, y: vis.y + (1 - pIn) * 260 * U, w: vis.w, h: vis.h };
+  const scroll = 120 + t * 90;
+  const reg = { cx: 448, cy: 0, w: 896 };
+  reg.cy = scroll + (r.h * (896 / r.w)) / 2;
+  g.save(); g.globalAlpha = 1 - clamp((t - 4.0) / 0.2);
+  screen(IMG.doc_standard, r, reg, { radius: 6 * U, fill: '#fff' });
+  PRESETS.slice(1).forEach(([k], i) => {
+    const p = sp(t - (i + 1) + 0.02, 'snappy');
+    if (p <= 0) return;
+    g.save();
+    // máscara diagonal
+    const d = (r.w + r.h) * p;
+    g.beginPath(); g.moveTo(r.x, r.y); g.lineTo(r.x + d, r.y); g.lineTo(r.x + d - r.h, r.y + r.h); g.lineTo(r.x, r.y + r.h); g.closePath(); g.clip();
+    screen(IMG['doc_' + k], r, reg, { radius: 6 * U, shadow: false, fill: '#fff' });
+    g.restore();
+  });
+  g.restore();
+}
+
+// ════════ CENA 6 — Multi-formato (15.0 – 18.2) ════════
+[15.25, 15.5, 15.75, 16.0].forEach((t) => cue(t, 'pop', 0.7));
+function sceneFormats(t) {
+  bg(C.ink); gridTex(50 * U, C.lineInv, t * 20 * U, 0);
+  const size = HS(V ? 100 : 92);
+  const hy = V ? 240 * U : SQ ? 130 * U : 400 * U;
+  kinetic(t, [{ words: 'Uma estratégia.', size, weight: 700, color: '#fff' }, { words: 'Todos os formatos.', size, italic: true, color: 'rgba(255,255,255,0.45)' }], L.hx, hy, { t0: 0.05, t1: 2.95 });
+  const items = [
+    ['Carrossel', 'doc_standard', DOC.slide1], ['Reels', 'doc_classic_gold', DOC.reels],
+    ['Stories', 'doc_standard', DOC.stories], ['Estratégia', 'doc_dark_onyx', DOC.cards],
+  ];
+  const vis = V ? { x: L.pad, y: 640 * U, w: W - L.pad * 2, h: 1120 * U } : L.vis;
+  const cols = 2, gap = 24 * U;
+  const cw = (vis.w - gap) / cols, ch = (vis.h - gap - 60 * U) / 2;
+  items.forEach(([name, im, cr], i) => {
+    const cx = vis.x + (i % cols) * (cw + gap), cy = vis.y + Math.floor(i / cols) * (ch + gap + 30 * U);
+    const p = sp(t - 0.25 - i * 0.25, 'playful'), po = sp(t - 2.95 - i * 0.04, 'snappy');
+    const rot = (1 - p) * (i % 2 ? 6 : -6) * Math.PI / 180;
+    g.save(); g.translate(cx + cw / 2, cy + ch / 2 + (1 - p) * 300 * U + po * H); g.rotate(rot);
+    g.globalAlpha = clamp(p * 2);
+    // cartão com o recorte real, cover
+    shadow(60 * U, 30 * U, 0.5); g.fillStyle = '#fff'; g.fillRect(-cw / 2, -ch / 2, cw, ch); noShadow();
+    const [sx, sy, sw, sh] = cr; const sc = Math.max(cw / sw, ch / sh);
+    const dw = cw / sc, dh = ch / sc;
+    g.drawImage(IMG[im], sx + (sw - dw) / 2, sy + (sh - dh) / 2, dw, dh, -cw / 2, -ch / 2, cw, ch);
+    label(name, -cw / 2, ch / 2 + 34 * U, { size: 15 * U, color: 'rgba(255,255,255,0.7)' });
+    g.restore();
+  });
+}
+
+// ════════ CENA 7 — PDF A3 (18.0 – 21.2) ════════
+cue(18.0, 'whoosh'); cue(19.5, 'paper'); cue(20.0, 'impact', 0.7);
+function sceneA3(t) {
+  bg(C.paper); gridTex(40 * U, C.line);
+  // a folha A3 (paisagem 1.41:1) monta: topo do documento real em cima, faixa preta, assinaturas
+  const aw = V ? W - L.pad * 2 : HZ ? W * 0.5 : W - L.pad * 2;
+  const ah = aw / 1.41;
+  const ax = V ? L.pad : HZ ? W * 0.44 : L.pad;
+  const ay = V ? 760 * U : HZ ? (H - ah) / 2 : 380 * U;
+  const p = sp(t - 0.05, 'heavy');
+  g.save(); g.translate(ax + aw / 2, ay + ah / 2 + (1 - p) * 500 * U); g.rotate((1 - p) * -0.12);
+  shadow(120 * U, 60 * U, 0.22); g.fillStyle = '#fff'; g.fillRect(-aw / 2, -ah / 2, aw, ah); noShadow();
+  g.fillStyle = C.ink; g.fillRect(-aw / 2, -ah / 2, aw, 6 * U);
+  // conteúdo real (cabeçalho + cartões do documento)
+  const pad = aw * 0.06, iw = aw - pad * 2;
+  const [hx, hy2, hw, hh] = [40, 20, 816, 250]; const hh2 = iw * (hh / hw) * 0.75;
+  g.drawImage(IMG.doc_standard, hx, hy2, hw, hh, -aw / 2 + pad + (iw - iw * 0.75) / 2, -ah / 2 + pad * 0.5, iw * 0.75, hh2);
+  const [cx2, cy2, cw2, ch2] = [60, 400, 780, 230]; const ch3 = iw * (ch2 / cw2) * 0.9;
+  const pc = clamp((t - 0.6) / 0.4);
+  g.save(); g.beginPath(); g.rect(-aw / 2 + pad, -ah / 2 + pad * 0.8 + hh2, iw * easeOut(pc), ch3); g.clip();
+  g.drawImage(IMG.doc_standard, cx2, cy2, cw2, ch2, -aw / 2 + pad + iw * 0.05, -ah / 2 + pad * 0.8 + hh2, iw * 0.9, ch3); g.restore();
+  // assinatura tripla
+  ['Designer', 'Social Media', 'Agência'].forEach((r, i) => {
+    const pp = sp(t - 1.4 - i * 0.18, 'snappy');
+    const sx = aw / 2 - pad - (2 - i) * aw * 0.16 - aw * 0.12, sy = ah / 2 - pad * 0.7;
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(sx, sy - 16 * U, aw * 0.12 * pp, 1.5 * U);
+    text(r.toUpperCase(), sx, sy + 4 * U, { size: Math.max(9, 11 * U * aw / 900), fam: F.label, weight: 700, ls: 1.5 * U, color: C.muted, alpha: pp });
+  });
+  g.restore();
+  // título
+  const size = HS(V ? 120 : 110);
+  const hy = V ? 270 * U : SQ ? 140 * U : 400 * U;
+  kinetic(t, [{ words: 'PDF A3', size, weight: 900 }, { words: 'em minutos.', size, italic: true, color: C.gold }], L.hx, hy, { t0: 0.1, t1: 2.95 });
+  label('Padrão de consultoria que cobra 5 dígitos', L.hx, hy + size * 1.55, { size: (V ? 18 : 16) * U, alpha: clamp((t - 0.9) * 4) * (1 - clamp((t - 2.9) / 0.2)) });
+}
+
+// ════════ CENA 8 — Assinatura + CTA (21.0 – 24) ════════
+cue(21.0, 'drop'); cue(22.5, 'click'); cue(22.55, 'chime', 0.8);
+function sceneCTA(t) {
+  const p = sp(t, 'heavy');
+  g.save(); g.beginPath(); g.rect(0, 0, W, H * p + 2); g.clip();
+  bg(C.ink); gridTex(60 * U, C.lineInv);
+  // brilho radial suave como na landing
+  const rg = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.5);
+  rg.addColorStop(0, 'rgba(255,255,255,0.05)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = V ? H * 0.42 : H * 0.44;
+  // logo
+  const lm = sp(t - 0.15, 'playful'); const ls = 46 * U * lm;
+  g.strokeStyle = '#fff'; g.lineWidth = 3 * U; g.strokeRect(cx - ls, cy - 250 * U - ls, ls * 2, ls * 2);
+  g.fillStyle = C.gold; g.fillRect(cx - ls * 0.38, cy - 250 * U - ls * 0.38, ls * 0.76, ls * 0.76);
+  text('AE·Studio', cx, cy - 140 * U, { size: 40 * U, fam: F.serif, weight: 700, ls: 3 * U, color: '#fff', align: 'center', alpha: clamp((t - 0.3) * 4) });
+  const size = HS(V ? 116 : 120);
+  kinetic(t, [{ words: 'Entre para o', size, color: '#fff' }, { words: 'Estúdio Elite.', size, italic: true, color: 'rgba(255,255,255,0.5)' }], cx, cy + 20 * U, { t0: 0.4, align: 'center' });
+  // botão CTA (como CTABtn da landing, invertido)
+  const bp = sp(t - 1.1, 'ui');
+  const bw = 560 * U, bh = 92 * U, bx = cx - bw / 2, by = cy + size * 2.0 + 20 * U + (1 - bp) * 40 * U;
+  const hov = clamp((t - 2.0) / 0.2);
+  g.save(); g.globalAlpha = bp;
+  g.fillStyle = hov > 0 ? `rgb(${255 - 71 * hov},${255 - 109 * hov},${255 - 165 * hov})` : '#fff';
+  g.fillRect(bx, by, bw, bh);
+  text('ACESSAR O ESTÚDIO ELITE  →', cx, by + bh / 2 + 7 * U, { size: 19 * U, fam: F.label, weight: 700, ls: (3 + hov) * U, color: '#000', align: 'center' });
+  g.restore();
+  label('Planos a partir de R$ 67/mês · 7 dias de garantia', cx, by + bh + 64 * U, { size: 15 * U, color: 'rgba(255,255,255,0.45)', align: 'center', alpha: clamp((t - 1.5) * 3) });
+  // cursor entra e clica
+  const cp = cursorAt(t, [[0, { x: W * 0.85, y: H * 0.95 }], [1.3, { x: cx + bw * 0.28, y: by + bh * 0.6 }]], [1.5]);
+  ripple(cp.x, cp.y, t - 1.5, '#000');
+  cursor(cp.x, cp.y, { press: cp.press, dark: true, alpha: clamp((t - 1.0) * 4) });
+  g.restore();
+}
+
+// ── Linha do tempo ──
+const SCENES = [
+  { from: 0, to: 3.2, draw: sceneHook },
+  { from: 3.0, to: 5.2, draw: sceneArch },
+  { from: 5.0, to: 9.25, draw: sceneForm },
+  { from: 9.0, to: 11.2, draw: sceneGen },
+  { from: 11.0, to: 15.25, draw: sceneDoc },
+  { from: 15.0, to: 18.25, draw: sceneFormats },
+  { from: 18.0, to: 21.2, draw: sceneA3 },
+  { from: 21.0, to: DUR + 1, draw: sceneCTA },
+];
+// cenas que entram "por cima" com a própria máscara (as demais cortam seco na batida)
+const SELF_MASK = new Set([sceneArch, sceneGen, sceneCTA]);
+// transição dura: a cena seguinte, se não tem máscara própria, começa exatamente na batida
+const LAYOUT = {};
+function draw(T) {
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+  for (let i = 0; i < SCENES.length; i++) {
+    const s = SCENES[i]; if (T < s.from || T >= s.to) continue;
+    const next = SCENES[i + 1];
+    // se a próxima cena já começou e não tem máscara própria, ela substitui esta
+    if (next && T >= next.from && !SELF_MASK.has(next.draw)) {
+      // pequena sobreposição: a próxima entra deslizando (lâmina) por 0.25s
+      const p = sp(T - next.from, 'snappy');
+      if (p < 0.999) { s.draw(T - s.from, LAYOUT); }
+      continue;
+    }
+    if (i > 0 && T < s.from + 0.35 && !SELF_MASK.has(s.draw)) {
+      const p = sp(T - s.from, 'snappy');
+      g.save(); g.beginPath();
+      if (V) g.rect(0, H * (1 - p), W, H * p + 1); else g.rect(W * (1 - p), 0, W * p + 1, H);
+      g.clip(); s.draw(T - s.from, LAYOUT); g.restore();
+    } else s.draw(T - s.from, LAYOUT);
+  }
+  drawGrain(T, 0.045);
+}
+window.seek = (t) => { draw(t); return true; };
+window.FILM = { dur: DUR, bpm: BPM, cues: CUES, mood: 'ad' };
+
+window.READY = (async () => {
+  Object.assign(LAYOUT, window.LAYOUT_DATA);
+  await FILM_RT.loadImages({
+    form_vazio: '../assets/app_dark_form_vazio.png', form_cheio: '../assets/app_dark_form_cheio.png',
+    doc_standard: '../assets/doc_standard_full.png', doc_classic_gold: '../assets/doc_classic_gold_full.png',
+    doc_dark_onyx: '../assets/doc_dark_onyx_full.png', doc_minimal_sand: '../assets/doc_minimal_sand_full.png',
+  });
+  await Promise.all(["900 40px 'Playfair Display'", "italic 400 40px 'Playfair Display'", "700 40px 'Playfair Display'",
+    "700 40px 'Syne'", "300 40px 'Inter'", "400 40px 'Inter'"].map((f) => document.fonts.load(f)));
+  return true;
+})();
+
+// Prévia ao vivo no navegador comum (desligada no render headless)
+if (!new URLSearchParams(location.search).get('render')) {
+  window.READY.then(() => { const t0 = performance.now(); (function loop() { draw(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(loop); })(); });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+@font-face{font-family:'Inter';font-style:normal;font-weight:300;src:url(fonts/Inter-normal-300.woff2) format("woff2");}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;src:url(fonts/Inter-normal-400.woff2) format("woff2");}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;src:url(fonts/Inter-normal-500.woff2) format("woff2");}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;src:url(fonts/Inter-normal-600.woff2) format("woff2");}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:400;src:url(fonts/PlayfairDisplay-italic-400.woff2) format("woff2");}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:700;src:url(fonts/PlayfairDisplay-italic-700.woff2) format("woff2");}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400;src:url(fonts/PlayfairDisplay-normal-400.woff2) format("woff2");}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:700;src:url(fonts/PlayfairDisplay-normal-700.woff2) format("woff2");}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:900;src:url(fonts/PlayfairDisplay-normal-900.woff2) format("woff2");}
+@font-face{font-family:'Syne';font-style:normal;font-weight:600;src:url(fonts/Syne-normal-600.woff2) format("woff2");}
+@font-face{font-family:'Syne';font-style:normal;font-weight:700;src:url(fonts/Syne-normal-700.woff2) format("woff2");}
+@font-face{font-family:'Syne';font-style:normal;font-weight:800;src:url(fonts/Syne-normal-800.woff2) format("woff2");}

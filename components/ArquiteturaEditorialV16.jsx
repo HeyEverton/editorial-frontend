@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import ShinyText from "./ShinyText";
 import {
   ArrowRight, ChevronDown, Check, Quote,
   Layers, Award, Target, Users, Zap, Eye, PenTool,
@@ -170,9 +169,44 @@ const Navbar = () => {
   );
 };
 
+/* ── VIDEO MODAL ("Ver como funciona") ── */
+const VideoModal = ({ open, onClose }) => {
+  const videoRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    videoRef.current?.play().catch(() => {});
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div onClick={onClose} role="dialog" aria-modal="true" aria-label="Como funciona o Estúdio Elite" style={{
+      position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 1100, position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: 3.5, textTransform: "uppercase", color: "rgba(255,255,255,0.5)" }}>Como funciona · 50s</span>
+          <button onClick={onClose} aria-label="Fechar vídeo" style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, letterSpacing: 2.5, textTransform: "uppercase", background: "transparent", color: T.white, border: "1px solid rgba(255,255,255,0.25)", padding: "8px 18px", cursor: "pointer" }}>Fechar ✕</button>
+        </div>
+        <video
+          ref={videoRef}
+          src="/videos/ae_como_funciona_16x9.mp4"
+          poster="/videos/ae_como_funciona_poster.jpg"
+          controls autoPlay playsInline
+          style={{ width: "100%", aspectRatio: "16 / 9", display: "block", background: T.black, boxShadow: "0 48px 120px rgba(0,0,0,0.5)" }}
+        />
+      </div>
+    </div>
+  );
+};
+
 /* ── HERO ── */
 const Hero = () => {
   const [ready, setReady] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   useEffect(() => { setTimeout(() => setReady(true), 80); }, []);
   const a = (d) => ({ opacity: ready ? 1 : 0, transform: ready ? "none" : "translateY(28px)", transition: `opacity 1s cubic-bezier(.16,1,.3,1) ${d}s, transform 1s cubic-bezier(.16,1,.3,1) ${d}s` });
 
@@ -201,34 +235,28 @@ const Hero = () => {
 
       <div style={{ ...a(0.54), display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center", marginBottom: 88 }}>
         <CTABtn large />
-        <button style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: T.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textDecoration: "underline", textDecorationColor: "rgba(0,0,0,0.15)" }}>
+        <button onClick={() => setVideoOpen(true)} style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: T.muted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textDecoration: "underline", textDecorationColor: "rgba(0,0,0,0.15)" }}>
           <Play size={11} fill={T.muted} /> Ver como funciona
         </button>
       </div>
 
       <div style={{ ...a(0.66), width: "100%", maxWidth: 840, position: "relative" }}>
-        <div style={{ background: T.ink, padding: "28px 36px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 48px 120px rgba(0,0,0,0.14)" }}>
-          <div style={{ display: "flex", gap: 7, marginBottom: 20 }}>
+        <div style={{ background: T.ink, padding: "14px 14px 0", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 48px 120px rgba(0,0,0,0.14)" }}>
+          <div style={{ display: "flex", gap: 7, marginBottom: 14, paddingLeft: 6 }}>
             {["#ff5f57","#ffbd2e","#28ca41"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {["Nicho ✓", "Público ✓", "Dores ✓", "Objetivo ✓", "Tom de Voz ✓"].map((s, i) => (
-              <div key={i} style={{ background: i === 4 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", padding: "6px 14px", fontFamily: "'Syne', sans-serif", fontSize: 9, letterSpacing: 1.5, color: i === 4 ? T.white : "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>{s}</div>
-            ))}
-          </div>
-          <div style={{ marginTop: 20, fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 13 }}>
-            <ShinyText
-              text="gerando arquitetura editorial..."
-              speed={2}
-              delay={0}
-              color="rgba(255,255,255,0.25)"
-              shineColor="#ffffff"
-              spread={120}
-              direction="left"
-            />
-          </div>
+          <video
+            // React não grava `muted` como atributo; sem isso o navegador bloqueia o autoplay
+            ref={v => { if (v && !v.muted) { v.muted = true; v.play().catch(() => {}); } }}
+            src="/videos/ae_anuncio_16x9.mp4"
+            poster="/videos/ae_anuncio_16x9_poster.jpg"
+            autoPlay muted loop playsInline
+            aria-label="Filme do Estúdio Elite"
+            style={{ width: "100%", aspectRatio: "16 / 9", display: "block", background: T.black }}
+          />
         </div>
       </div>
+      <VideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
 
       <div style={{ position: "absolute", bottom: 36, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: 0.2 }}>
         <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 8, letterSpacing: 3, textTransform: "uppercase" }}>Scroll</span>

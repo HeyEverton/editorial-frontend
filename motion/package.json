@@ -1,0 +1,14 @@
+{
+  "name": "ae-studio-motion",
+  "private": true,
+  "type": "module",
+  "description": "Estúdio de motion do AE·Studio — filmes renderizados a partir de código (seek(t) + Playwright + ffmpeg).",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "render:ad": "node render.mjs --film ad",
+    "render:tutorial": "node render.mjs --film tutorial"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}
